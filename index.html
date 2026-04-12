@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title> <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Briff Game">
+    <title>Briff Game</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Briff Game">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/b-key.png">
 
-<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/b-key.png">
-<link rel="icon" href="https://img.icons8.com/fluency/192/b-key.png"> Briff Game | Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -18,7 +19,8 @@
         .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; font-size: 1rem; }
         .primary { background: #00d4ff; color: #121212; }
         .secondary { background: transparent; color: #666; font-size: 0.8rem; margin-top: 20px; border: none; cursor: pointer; text-decoration: underline; }
-        #game-screen, .hidden { display: none; }
+        #game-screen, .hidden, #loading-screen { display: none; }
+        #loading-screen { display: block; margin-top: 50px; color: #888; }
         .stats-card { background: #1e1e1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #333; }
         .progress-container { margin: 15px 0; }
         .label-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; }
@@ -32,14 +34,14 @@
 </head>
 <body>
 
-<div class="container" id="auth-screen">
+<div id="loading-screen">Загрузка...</div>
+
+<div class="container" id="auth-screen" style="display:none;">
     <h1 style="color: #00d4ff; margin-bottom: 5px;">Briff Game</h1>
     <p id="auth-subtitle" style="color: #888; margin-bottom: 25px;">Вход</p>
-
     <div class="auth-card">
-        <input type="text" id="nick" placeholder="Твой Ник (на латинице)">
+        <input type="text" id="nick" placeholder="Твой Ник">
         <input type="password" id="pair-pass" placeholder="Пароль пары">
-        
         <button id="btn-main" class="btn primary" onclick="app.handle()">Войти</button>
         <button id="btn-toggle" class="secondary" onclick="app.toggle()">Нет аккаунта? Создать</button>
     </div>
@@ -61,11 +63,12 @@
         </div>
     </div>
     <div id="tasks"></div>
+    <button class="secondary" onclick="app.logout()" style="margin-top:20px; width:100%;">Выйти из аккаунта</button>
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
+    const SUPABASE_URL = 'ВСТАВЬ_URL'; 
+    const SUPABASE_KEY = 'ВСТАВЬ_KEY';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const app = {
@@ -73,38 +76,69 @@
         user: null, profile: null,
         taskList: [{id:'d',n:'Посуда',x:50},{id:'t',n:'Мусор',x:20},{id:'c',n:'Уборка',x:100}],
 
+        async init() {
+            // Проверка: есть ли сохраненные данные?
+            const savedNick = localStorage.getItem('briff_nick');
+            const savedPass = localStorage.getItem('briff_pass');
+
+            if (savedNick && savedPass) {
+                await this.login(savedNick, savedPass, true);
+            } else {
+                this.showAuth();
+            }
+        },
+
+        showAuth() {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('game-screen').style.display = 'none';
+        },
+
         toggle() {
             this.isLogin = !this.isLogin;
             document.getElementById('auth-subtitle').innerText = this.isLogin ? 'Вход' : 'Регистрация';
             document.getElementById('btn-main').innerText = this.isLogin ? 'Войти' : 'Создать';
-            document.getElementById('btn-toggle').innerText = this.isLogin ? 'Нет аккаунта? Создать' : 'Уже есть аккаунт? Войти';
         },
 
         async handle() {
-            const n = document.getElementById('nick').value.trim().replace(/\s+/g, '');
+            const n = document.getElementById('nick').value.trim();
             const p = document.getElementById('pair-pass').value;
             if(!n || !p) return alert("Заполни поля!");
 
-            // Создаем правильный формат почты для базы из ника
-            const techEmail = `${n.toLowerCase()}@gmail.com`;
-
             if(this.isLogin) {
-                const { data, error } = await sb.auth.signInWithPassword({ email: techEmail, password: p });
-                if(error) return alert("Ошибка: Проверь ник и пароль!");
-                this.user = data.user;
-                this.start();
+                await this.login(n, p);
             } else {
+                const techEmail = `${n.toLowerCase()}@gmail.com`;
                 const { data, error } = await sb.auth.signUp({ email: techEmail, password: p });
                 if(error) return alert("Ошибка: " + error.message);
                 await sb.from('profiles').insert({ id: data.user.id, nickname: n, pair_code: p, xp: 0, level_name: 'Новички' });
-                alert("Аккаунт создан! Теперь жми Войти");
+                alert("Аккаунт создан! Теперь входи.");
                 this.toggle();
             }
+        },
+
+        async login(n, p, isAuto = false) {
+            const techEmail = `${n.toLowerCase()}@gmail.com`;
+            const { data, error } = await sb.auth.signInWithPassword({ email: techEmail, password: p });
+            
+            if(error) {
+                if(!isAuto) alert("Ошибка входа!");
+                this.showAuth();
+                return;
+            }
+
+            // Запоминаем для авто-входа
+            localStorage.setItem('briff_nick', n);
+            localStorage.setItem('briff_pass', p);
+
+            this.user = data.user;
+            await this.start();
         },
 
         async start() {
             const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
             this.profile = pr;
+            document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             document.getElementById('greet').innerText = `Привет, ${pr.nickname}!`;
@@ -136,8 +170,16 @@
             };
             if(me) upd('f-my', 'v-my', 'l-my', `Я (${me.nickname})`, me.xp);
             if(p) upd('f-p', 'v-p', 'l-p', p.nickname, p.xp);
+        },
+
+        logout() {
+            localStorage.clear();
+            location.reload();
         }
     };
+
+    // Запуск при загрузке
+    app.init();
 </script>
 </body>
 </html>
