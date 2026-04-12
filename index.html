@@ -1,70 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кошелек Свиданий</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/b-key.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
+        .container { width: 100%; max-width: 400px; }
+        
+        /* КРУПНЫЕ СВЕТЯЩИЕСЯ ЦИФРЫ */
+        .gold-num { 
+            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            font-weight: 800; 
+            font-size: 1.5rem; /* Увеличил размер */
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); /* Подсветка */
+        }
+        
+        .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; box-shadow: 0 0 8px rgba(255,215,0,0.6); display: inline-block; }
+        
+        /* ПОДСВЕТКА ПОЛЯ */
+        .stats-card { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 25px; 
+            margin-bottom: 20px; 
+            border: 1px solid #333; 
+            width: 100%; 
+            box-sizing: border-box; 
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
+        .progress-fill { height: 100%; width: 0%; transition: 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); box-shadow: 0 0 10px rgba(0,212,255,0.4); }
+        .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); box-shadow: 0 0 10px rgba(255,0,122,0.4); }
+        
+        /* КАРТОЧКИ ЗАДАНИЙ */
+        .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
+        
+        /* КНОПКИ: МИНУС СЛЕВА, ПЛЮС СПРАВА */
+        .controls { display: flex; gap: 12px; align-items: center; }
+        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; }
+        .btn-action:active { transform: scale(0.9); }
+        .plus { background: #00d4ff; color: #121212; order: 2; } /* Справа */
+        .minus { background: #2a2a2a; color: #666; order: 1; } /* Слева */
+        
+        .footer-controls { width: 100%; margin-top: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 12px 20px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; width: 100%; max-width: 220px; }
+        #admin-reset { border-color: #ff4444; color: #ff4444; margin-bottom: 10px; }
+        
+        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1.1rem; }
+        #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 20px rgba(255,215,0,0.4); }
+    </style>
+</head>
+<body>
+<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка...</div>
+<div class="container" id="game-screen" style="display:none;">
+    <div style="text-align: center; margin-bottom: 25px;">
+        <h2 style="margin:0; text-transform: uppercase; letter-spacing: 1px;">Кошелек Свиданий</h2>
+        <div id="week-tag" style="color: #666; font-size: 0.9rem; margin-top: 5px; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
+    </div>
+    
+    <div id="main-stats" class="stats-card">
+        <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
+        <div style="display:flex; justify-content:space-between; align-items: flex-end;">
+            <span id="label-me" style="color:#888; font-weight: bold;">ВЫ</span>
+            <span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span>
+        </div>
+        <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
+        
+        <div style="display:flex; justify-content:space-between; align-items: flex-end; margin-top:25px;">
+            <span id="label-p" style="color:#888; font-weight: bold;">ОЛЯ</span>
+            <span id="v-p" class="gold-num" style="background: none; -webkit-text-fill-color: #ff007a; color: #ff007a; text-shadow: 0 0 15px rgba(255, 0, 122, 0.3);">0 <div class="coin-icon"></div></span>
+        </div>
+        <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
+    </div>
+
+    <button id="shop-trigger-btn" disabled>ВЫБОР В ПЯТНИЦУ 18:00 ⏳</button>
+    
+    <div id="tasks"></div>
+
+    <div class="footer-controls">
+        <button id="admin-reset" class="btn-secondary" style="display:none;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
+        <button class="btn-secondary" onclick="app.logout()">ВЫЙТИ ИЗ АККАУНТА</button>
+    </div>
+</div>
+
 <script>
-    // ... (стили и верстка остаются прежними)
+    const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const coinHTML = () => '<div class="coin-icon"></div>';
 
-    async refresh() {
-        // Принудительно проверяем, не сменился ли сеанс
-        await sb.auth.getSession();
+    const app = {
+        user: null, profile: null,
+        tasks: [{n:'Посуда', x:30},{n:'Стирка', x:40},{n:'Уборка', x:100},{n:'Сушилка', x:20},{n:'Завтрак', x:60}],
+        
+        async init() {
+            const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
+            if (!n || !p) return this.askLogin();
+            const { data } = await sb.auth.signInWithPassword({ email: `${n.toLowerCase()}@gmail.com`, password: p });
+            if (data?.user) { this.user = data.user; await this.start(); } else { this.logout(); }
+        },
 
-        const { data: team, error: teamError } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
-        if(!team || teamError) return;
-        
-        const me = team.find(x => x.id === this.user.id);
-        const p = team.find(x => x.id !== this.user.id);
-        
-        // МАГИЯ АВТО-СИНХРОНИЗАЦИИ
-        // Если партнер (ты) сбросил всё, а у меня (Оли) еще старые данные
-        if (p && p.current_week === 1 && p.xp === 0 && (this.profile.current_week !== 1 || this.profile.xp !== 0)) {
-            console.log("Синхронизация сброса сезона...");
+        askLogin() {
+            document.getElementById('loading-screen').innerHTML = `<div style="background:#1e1e1e; padding:30px; border-radius:25px; width:100%; box-sizing:border-box;"><h3>Вход в игру</h3><input type="text" id="n_in" placeholder="Ваш ник" style="width:100%; padding:18px; margin:10px 0; background:#2a2a2a; border:1px solid #444; color:white; border-radius:15px; box-sizing:border-box;"><input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:18px; margin:10px 0; background:#2a2a2a; border:1px solid #444; color:white; border-radius:15px; box-sizing:border-box;"><button onclick="app.saveLogin()" style="width:100%; background:#00d4ff; padding:18px; border:none; border-radius:15px; font-weight:bold; color:#121212; margin-top:10px;">ВОЙТИ</button></div>`;
+        },
+
+        saveLogin() {
+            const n = document.getElementById('n_in').value.trim(), p = document.getElementById('p_in').value;
+            if(n && p) { localStorage.setItem('briff_nick', n); localStorage.setItem('briff_pass', p); location.reload(); }
+        },
+
+        async start() {
+            const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
+            this.profile = pr;
+            if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            this.renderTasks(); this.refresh();
+            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
+        },
+
+        renderTasks() {
+            document.getElementById('tasks').innerHTML = this.tasks.map(t => `
+                <div class="task-card">
+                    <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem; text-shadow:none;">+${t.x} ${coinHTML()}</span></div>
+                    <div class="controls">
+                        <button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button>
+                        <button class="btn-action plus" onclick="app.doTask(${t.x})">+</button>
+                    </div>
+                </div>`).join('');
+        },
+
+        async doTask(val) {
+            const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
+            await sb.from('profiles').update({ xp: Math.max(0, (cur.xp || 0) + val) }).eq('id', this.user.id);
+            this.refresh();
+        },
+
+        async refresh() {
+            await sb.auth.getSession();
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            if(!team) return;
             
-            // Оля обновляет свои данные
-            const { error: resetErr } = await sb.from('profiles')
-                .update({ xp: 0, current_week: 1, used_dates: "" })
-                .eq('id', this.user.id);
+            const me = team.find(x => x.id === this.user.id);
+            const p = team.find(x => x.id !== this.user.id);
 
-            if (!resetErr) {
-                // Чистим локальный кэш и перезагружаем
-                this.profile.current_week = 1;
-                this.profile.xp = 0;
-                location.reload(); 
-                return;
+            // АВТО-СИНХРОНИЗАЦИЯ СБРОСА
+            if (p && p.current_week === 1 && p.xp === 0 && (this.profile.current_week !== 1 || this.profile.xp !== 0)) {
+                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
+                location.reload(); return;
             }
-        }
 
-        this.profile = me;
-        this.team = team;
+            this.profile = me;
 
-        // Обновляем экран
-        document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
-        document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
-        
-        if(p) {
-            document.getElementById('label-p').innerText = p.nickname;
-            document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
-            document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
-        }
+            document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
+            document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
+            
+            if(p) {
+                document.getElementById('label-p').innerText = p.nickname.toUpperCase();
+                document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
+                document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
+            }
 
-        const week = me.current_week || 1;
-        const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
-        document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
-        document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
-        
-        this.updateShopButton(me, team);
-    },
+            const week = me.current_week || 1;
+            const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
+            document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
+            document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
+            
+            this.updateShopButton(me, team);
+        },
 
-    async manualReset() {
-        if (!confirm("Обнулить сезон для обоих?")) return;
-        
-        // 1. Сначала сбрасываем тебя
-        const { error } = await sb.from('profiles')
-            .update({ xp: 0, current_week: 1, used_dates: "" })
-            .eq('id', this.user.id);
-        
-        if (error) {
-            alert("Ошибка: " + error.message);
-        } else {
-            alert("Твой профиль обнулен. Оля синхронизируется автоматически при открытии приложения!");
-            location.reload();
-        }
-    }
-    // ... (остальные функции остаются)
+        updateShopButton(me, team) {
+            const now = new Date(), day = now.getDay(), hrs = now.getHours();
+            const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
+            const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
+            const shopBtn = document.getElementById('shop-trigger-btn');
+            
+            if (isFridayTime) {
+                if (me.id === leader.id && me.xp >= 150) {
+                    shopBtn.disabled = false; shopBtn.classList.add('active'); shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
+                } else {
+                    shopBtn.disabled = true; shopBtn.classList.remove('active'); shopBtn.innerText = "ПОБЕДА ЗА ПАРТНЕРОМ 🏆";
+                }
+            } else {
+                shopBtn.disabled = true; shopBtn.classList.remove('active'); shopBtn.innerText = "ВЫБОР В ПЯТНИЦУ 18:00 ⏳";
+            }
+        },
+
+        async manualReset() {
+            if (!confirm("Это полностью обнулит сезон для тебя и Оли. Уверены?")) return;
+            const { error } = await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
+            if (!error) { alert("Сезон сброшен!"); location.reload(); }
+        },
+
+        logout() { localStorage.clear(); location.reload(); }
+    };
+    app.init();
 </script>
+</body>
+</html>
