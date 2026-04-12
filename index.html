@@ -59,7 +59,7 @@
     const coinHTML = () => '<div class="coin-icon"></div>';
 
     const app = {
-        user: null, profile: null, team: [],
+        user: null, profile: null,
         tasks: [{n:'Посуда', x:30},{n:'Стирка', x:40},{n:'Уборка', x:100},{n:'Сушилка', x:20},{n:'Завтрак', x:60}],
         
         async init() {
@@ -85,6 +85,7 @@
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             this.renderTasks(); this.refresh();
+            // Слушаем изменения в реальном времени
             sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
 
@@ -102,9 +103,8 @@
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if(!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            this.team = team; this.profile = me;
-
-            // СИНХРО-СБРОС ДЛЯ ПАРТНЕРА (через current_week)
+            
+            // МАГИЯ СИНХРОНИЗАЦИИ: если партнер (ты) сбросил всё на 1 неделю, Оля делает то же самое автоматически
             if (p && p.current_week === 1 && me.current_week !== 1 && p.xp === 0) {
                  await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', me.id);
                  location.reload(); return;
@@ -121,34 +121,4 @@
             const week = me.current_week || 1;
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
-            document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
-
-            // Логика кнопки маркета
-            const now = new Date(), day = now.getDay(), hrs = now.getHours();
-            const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
-            const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
-            const shopBtn = document.getElementById('shop-trigger-btn');
-            if (isFridayTime) {
-                if (me.id === leader.id && me.xp >= 150) {
-                    shopBtn.disabled = false; shopBtn.classList.add('active'); shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
-                } else {
-                    shopBtn.disabled = true; shopBtn.classList.remove('active'); shopBtn.innerText = "ПОБЕДА ЗА ПАРТНЕРОМ 🏆";
-                }
-            } else {
-                shopBtn.disabled = true; shopBtn.classList.remove('active'); shopBtn.innerText = "ВЫБОР В ПЯТНИЦУ 18:00 ⏳";
-            }
-        },
-
-        async manualReset() {
-            if (!confirm("Обнулить сезон?")) return;
-            // Теперь current_week точно существует в базе!
-            const { error } = await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
-            if (!error) { alert("Обнулено!"); location.reload(); } else { alert("Ошибка: " + error.message); }
-        },
-
-        logout() { localStorage.clear(); location.reload(); }
-    };
-    app.init();
-</script>
-</body>
-</html>
+            document.getElementById('lvl-badge').innerText = lvls[week
