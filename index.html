@@ -25,12 +25,13 @@
         .minus { background: #2a2a2a; color: #666; }
         .footer-controls { width: 100%; margin-top: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 10px 20px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; width: 100%; max-width: 200px; }
-        .btn-admin { border-color: #00d4ff; color: #00d4ff; }
+        #admin-reset { border-color: #00d4ff; color: #00d4ff; }
         #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1rem; }
+        #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 15px rgba(255,215,0,0.3); cursor: pointer; }
     </style>
 </head>
 <body>
-<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка...</div>
+<div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
 <div class="container" id="game-screen" style="display:none;">
     <div style="text-align: center; margin-bottom: 25px;">
         <h2 style="margin:0; text-transform: uppercase;">Кошелек Свиданий</h2>
@@ -46,7 +47,7 @@
     <button id="shop-trigger-btn" disabled>ВЫБОР В ПЯТНИЦУ 18:00 ⏳</button>
     <div id="tasks"></div>
     <div class="footer-controls">
-        <button id="admin-reset" class="btn-secondary btn-admin" style="display:none;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
+        <button id="admin-reset" class="btn-secondary" style="display:none;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
         <button class="btn-secondary" onclick="app.logout()">ВЫЙТИ</button>
     </div>
 </div>
@@ -58,7 +59,7 @@
     const coinHTML = () => '<div class="coin-icon"></div>';
 
     const app = {
-        user: null, profile: null,
+        user: null, profile: null, team: [],
         tasks: [{n:'Посуда', x:30},{n:'Стирка', x:40},{n:'Уборка', x:100},{n:'Сушилка', x:20},{n:'Завтрак', x:60}],
         
         async init() {
@@ -83,7 +84,6 @@
             if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
-            document.getElementById('label-me').innerText = pr.nickname;
             this.renderTasks(); this.refresh();
             sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
@@ -102,11 +102,12 @@
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if(!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            
-            // ЛОГИКА СИНХРОНИЗАЦИИ: если партнер обнулился, обнуляемся тоже
-            if (p && p.xp === 0 && (!p.used_dates || p.used_dates === "") && (me.xp > 0 || me.used_dates !== "")) {
-                await sb.from('profiles').update({ xp: 0, used_dates: "" }).eq('id', me.id);
-                location.reload(); return;
+            this.team = team; this.profile = me;
+
+            // СИНХРО-СБРОС ДЛЯ ПАРТНЕРА (через current_week)
+            if (p && p.current_week === 1 && me.current_week !== 1 && p.xp === 0) {
+                 await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', me.id);
+                 location.reload(); return;
             }
 
             document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
@@ -117,19 +118,32 @@
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
             }
 
-            // РАСЧЕТ НЕДЕЛИ НА ОСНОВЕ ИСТОРИИ СВИДАНИЙ (без использования колонки current_week)
-            const usedCount = (me.used_dates || "").split(',').filter(x => x).length;
-            const week = Math.min(usedCount + 1, 4);
+            const week = me.current_week || 1;
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
-            document.getElementById('lvl-badge').innerText = lvls[week-1];
+            document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
+
+            // Логика кнопки маркета
+            const now = new Date(), day = now.getDay(), hrs = now.getHours();
+            const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
+            const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
+            const shopBtn = document.getElementById('shop-trigger-btn');
+            if (isFridayTime) {
+                if (me.id === leader.id && me.xp >= 150) {
+                    shopBtn.disabled = false; shopBtn.classList.add('active'); shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
+                } else {
+                    shopBtn.disabled = true; shopBtn.classList.remove('active'); shopBtn.innerText = "ПОБЕДА ЗА ПАРТНЕРОМ 🏆";
+                }
+            } else {
+                shopBtn.disabled = true; shopBtn.classList.remove('active'); shopBtn.innerText = "ВЫБОР В ПЯТНИЦУ 18:00 ⏳";
+            }
         },
 
         async manualReset() {
-            if (!confirm("Обнулить всё и начать с 1-й недели?")) return;
-            // Обнуляем только XP и историю. Приложение само поймет, что это 1-я неделя.
-            const { error } = await sb.from('profiles').update({ xp: 0, used_dates: "" }).eq('id', this.user.id);
-            if (!error) { alert("Сезон обнулен!"); location.reload(); } else { alert("Ошибка: " + error.message); }
+            if (!confirm("Обнулить сезон?")) return;
+            // Теперь current_week точно существует в базе!
+            const { error } = await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
+            if (!error) { alert("Обнулено!"); location.reload(); } else { alert("Ошибка: " + error.message); }
         },
 
         logout() { localStorage.clear(); location.reload(); }
