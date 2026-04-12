@@ -47,22 +47,22 @@
         .btn-admin { border-color: #00d4ff; color: #00d4ff; }
         .btn-danger { border-color: #ff4d4d; color: #ff4d4d; }
 
-        #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; box-shadow: 0 0 100px #000; }
+        #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; }
         .date-option { background: #2a2a2a; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
         
-        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1rem; transition: 0.3s; }
+        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1rem; }
         #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 15px rgba(255,215,0,0.3); cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка Briff Game...</div>
+<div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
 
 <div class="container" id="game-screen" style="display:none;">
     <div id="news-bar"></div>
 
     <div style="text-align: center; margin-bottom: 25px;">
-        <h2 id="greet" style="margin:0; text-transform: uppercase; letter-spacing: 1px;">Кошелек Свиданий</h2>
+        <h2 id="greet" style="margin:0; text-transform: uppercase;">Кошелек Свиданий</h2>
         <div id="week-tag" style="color: #666; font-size: 0.8rem; margin-top: 5px; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
     </div>
 
@@ -75,7 +75,7 @@
         <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
 
-    <button id="shop-trigger-btn" disabled onclick="app.openMarket()">ВЫБРАТЬ СВИДАНИЕ 🥂</button>
+    <button id="shop-trigger-btn" disabled onclick="app.openMarket()">ВЫБОР В ПЯТНИЦУ 18:00 ⏳</button>
 
     <div id="tasks"></div>
 
@@ -151,9 +151,15 @@
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if(!team) return;
-            const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            this.team = team; this.profile = me;
+            let me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
+            
+            // ПРОВЕРКА СИНХРОНИЗАЦИИ СБРОСА
+            if (p && p.current_week === 1 && me.current_week > 1) {
+                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', me.id);
+                location.reload(); return;
+            }
 
+            this.team = team; this.profile = me;
             document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
             
@@ -192,34 +198,20 @@
             }
         },
 
-        openMarket() {
-            const allUsed = this.team.map(u => u.used_dates || "").join(',').split(',').filter(x => x);
-            let available = this.allDates.filter(d => !allUsed.includes(d.n) && this.profile.xp >= d.p);
-            if (available.length === 0) return alert("Недостаточно койнов!");
-            
-            const random3 = available.sort(() => 0.5 - Math.random()).slice(0, 3);
-            document.getElementById('date-market').style.display = 'block';
-            document.getElementById('date-options').innerHTML = random3.map(d => `<div class="date-option"><span>${d.n} <br><small class="gold-num">${d.p} ${coinHTML()}</small></span><button onclick="app.buy('${d.n}', ${d.p})" style="background:#2ecc71; border:none; padding:8px 15px; border-radius:10px; color:white; font-weight:bold;">Выбрать</button></div>`).join('');
-        },
-
-        async buy(name, price) {
-            if(!confirm(`Берем "${name}"?`)) return;
-            const newUsed = this.profile.used_dates ? this.profile.used_dates + "," + name : name;
-            await sb.from('profiles').update({ xp: this.profile.xp - price, used_dates: newUsed }).eq('id', this.user.id);
-            location.reload();
-        },
-
         async manualReset() {
-            if (!confirm("Внимание! Это обнулит всё: койны и историю свиданий у обоих. Неделя сбросится на 1-ю. Подтверждаешь?")) return;
-            try {
-                const { data: teamToReset } = await sb.from('profiles').select('id').eq('pair_code', this.profile.pair_code);
-                for (const member of teamToReset) {
-                    await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', member.id);
-                }
-                alert("Сезон успешно обнулен!");
+            if (!confirm("Обнулить всё и вернуться на 1-ю неделю?")) return;
+            // Сбрасываем ТЕБЯ. Оля сбросится сама при входе благодаря логике в refresh()
+            const { error } = await sb.from('profiles').update({ 
+                xp: 0, 
+                current_week: 1, 
+                used_dates: "" 
+            }).eq('id', this.profile.id);
+            
+            if (!error) {
+                alert("Твой профиль сброшен. Профиль партнера обновится при следующем входе.");
                 location.reload();
-            } catch (err) {
-                alert("Ошибка сброса.");
+            } else {
+                alert("Ошибка соединения с базой.");
             }
         },
 
