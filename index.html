@@ -81,7 +81,14 @@
 
     const app = {
         isLogin: true, user: null, profile: null,
-        taskList: [{id:'d',n:'Посуда',x:50},{id:'t',n:'Мусор',x:20},{id:'c',n:'Уборка',x:100}],
+        // ОБНОВЛЕННЫЕ ЗАДАНИЯ
+        taskList: [
+            {id:'posuda', n:'Посуда', x:30},
+            {id:'stirka', n:'Стирка', x:40},
+            {id:'uborka', n:'Уборка', x:100},
+            {id:'sushka', n:'Сушилка', x:20},
+            {id:'breakfast', n:'Завтрак', x:60}
+        ],
 
         async init() {
             const savedNick = localStorage.getItem('briff_nick');
@@ -139,7 +146,6 @@
             if(error || !pr) { this.logout(); return; }
             this.profile = pr;
             
-            // ПРОВЕРКА НА АДМИНА (только для ника Briff)
             if (pr.nickname.toLowerCase() === 'briff') {
                 document.getElementById('admin-panel').style.display = 'block';
             }
