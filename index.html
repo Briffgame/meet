@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Briff Game | Final</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 400px; }
+        .auth-card { background: #1e1e1e; padding: 30px; border-radius: 25px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+        input { width: 100%; padding: 16px; margin: 10px 0; background: #2a2a2a; border: 1px solid #444; border-radius: 12px; color: white; box-sizing: border-box; font-size: 16px; outline: none; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; font-size: 1rem; }
+        .primary { background: #00d4ff; color: #121212; }
+        .secondary { background: transparent; color: #666; font-size: 0.8rem; margin-top: 20px; border: none; cursor: pointer; text-decoration: underline; }
+        #game-screen, .hidden { display: none; }
+        .stats-card { background: #1e1e1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #333; }
+        .progress-container { margin: 15px 0; }
+        .label-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; }
+        .progress-bar { width: 100%; height: 16px; background: #333; border-radius: 8px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; transition: 1s ease; }
+        .my-bar { background: #00d4ff; }
+        .p-bar { background: #ff007a; }
+        .task-card { background: #1e1e1e; padding: 18px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; }
+        .add-btn { background: #00d4ff; border: none; width: 45px; height: 45px; border-radius: 12px; font-size: 1.8rem; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="auth-screen">
+    <h1 style="color: #00d4ff; margin-bottom: 5px;">Briff Game</h1>
+    <p id="auth-subtitle" style="color: #888; margin-bottom: 25px;">Вход</p>
+
+    <div class="auth-card">
+        <input type="text" id="nick" placeholder="Твой Ник (на латинице)">
+        <input type="password" id="pair-pass" placeholder="Пароль пары">
+        
+        <button id="btn-main" class="btn primary" onclick="app.handle()">Войти</button>
+        <button id="btn-toggle" class="secondary" onclick="app.toggle()">Нет аккаунта? Создать</button>
+    </div>
+</div>
+
+<div class="container" id="game-screen">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2 id="greet" style="margin: 0;">Привет!</h2>
+        <p style="color: #00d4ff; font-weight: bold; font-size: 0.7rem; margin-top: 5px;">LVL: НОВИЧКИ</p>
+    </div>
+    <div class="stats-card">
+        <div class="progress-container">
+            <div class="label-row"><span id="l-my">Я</span><span id="v-my">0 XP</span></div>
+            <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
+        </div>
+        <div class="progress-container">
+            <div class="label-row"><span id="l-p">Партнер</span><span id="v-p">0 XP</span></div>
+            <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
+        </div>
+    </div>
+    <div id="tasks"></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const app = {
+        isLogin: true,
+        user: null, profile: null,
+        taskList: [{id:'d',n:'Посуда',x:50},{id:'t',n:'Мусор',x:20},{id:'c',n:'Уборка',x:100}],
+
+        toggle() {
+            this.isLogin = !this.isLogin;
+            document.getElementById('auth-subtitle').innerText = this.isLogin ? 'Вход' : 'Регистрация';
+            document.getElementById('btn-main').innerText = this.isLogin ? 'Войти' : 'Создать';
+            document.getElementById('btn-toggle').innerText = this.isLogin ? 'Нет аккаунта? Создать' : 'Уже есть аккаунт? Войти';
+        },
+
+        async handle() {
+            const n = document.getElementById('nick').value.trim().replace(/\s+/g, '');
+            const p = document.getElementById('pair-pass').value;
+            if(!n || !p) return alert("Заполни поля!");
+
+            // Создаем правильный формат почты для базы из ника
+            const techEmail = `${n.toLowerCase()}@gmail.com`;
+
+            if(this.isLogin) {
+                const { data, error } = await sb.auth.signInWithPassword({ email: techEmail, password: p });
+                if(error) return alert("Ошибка: Проверь ник и пароль!");
+                this.user = data.user;
+                this.start();
+            } else {
+                const { data, error } = await sb.auth.signUp({ email: techEmail, password: p });
+                if(error) return alert("Ошибка: " + error.message);
+                await sb.from('profiles').insert({ id: data.user.id, nickname: n, pair_code: p, xp: 0, level_name: 'Новички' });
+                alert("Аккаунт создан! Теперь жми Войти");
+                this.toggle();
+            }
+        },
+
+        async start() {
+            const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
+            this.profile = pr;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('greet').innerText = `Привет, ${pr.nickname}!`;
+            this.render(); this.refresh();
+            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
+        },
+
+        render() {
+            document.getElementById('tasks').innerHTML = this.taskList.map(t => `
+                <div class="task-card">
+                    <div><b>${t.n}</b><br><small>+${t.x} XP</small></div>
+                    <button class="add-btn" onclick="app.doTask('${t.id}', ${t.x})">+</button>
+                </div>`).join('');
+        },
+
+        async doTask(id, x) {
+            const { data } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
+            await sb.from('profiles').update({ xp: data.xp + x }).eq('id', this.user.id);
+            this.refresh();
+        },
+
+        async refresh() {
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
+            const upd = (fill, val, lab, name, xp) => {
+                document.getElementById(fill).style.width = Math.min((xp / 500) * 100, 100) + '%';
+                document.getElementById(val).innerText = `${xp} XP`;
+                document.getElementById(lab).innerText = name;
+            };
+            if(me) upd('f-my', 'v-my', 'l-my', `Я (${me.nickname})`, me.xp);
+            if(p) upd('f-p', 'v-p', 'l-p', p.nickname, p.xp);
+        }
+    };
+</script>
+</body>
+</html>
