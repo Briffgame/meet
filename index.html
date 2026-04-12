@@ -62,13 +62,13 @@
     <div id="news-bar"></div>
 
     <div style="text-align: center; margin-bottom: 25px;">
-        <h2 id="greet" style="margin:0;">Briff</h2>
+        <h2 id="greet" style="margin:0; text-transform: uppercase; letter-spacing: 1px;">Кошелек Свиданий</h2>
         <div id="week-tag" style="color: #666; font-size: 0.8rem; margin-top: 5px; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
     </div>
 
     <div id="main-stats" class="stats-card">
         <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
-        <div style="display:flex; justify-content:space-between;"><span id="label-me" style="color:#888;">Загрузка...</span><span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span></div>
+        <div style="display:flex; justify-content:space-between;"><span id="label-me" style="color:#888;">Вы</span><span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span></div>
         <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
         
         <div style="display:flex; justify-content:space-between; margin-top:20px;"><span id="label-p" style="color:#888;">Партнер</span><span id="v-p" class="gold-num" style="color:#ff007a; -webkit-text-fill-color: initial;">0 <div class="coin-icon"></div></span></div>
@@ -86,7 +86,6 @@
 
     <div id="date-market">
         <h3 style="text-align:center; color:#FFD700;">Свидание Недели</h3>
-        <p style="font-size: 0.7rem; color: #888; text-align: center; margin-bottom: 15px;">Выбери один из 3 вариантов:</p>
         <div id="date-options"></div>
         <button onclick="document.getElementById('date-market').style.display='none'" style="width:100%; background:none; color:#666; border:none; margin-top:10px; padding:10px;">Закрыть</button>
     </div>
@@ -151,6 +150,7 @@
 
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            if(!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
             this.team = team; this.profile = me;
 
@@ -210,19 +210,17 @@
         },
 
         async manualReset() {
-            if (!confirm("Это обнулит койны и историю свиданий у ОБОИХ и вернет на 1-ю неделю. Уверен?")) return;
-            
-            // Сбрасываем каждого по ID, чтобы точно обойти ограничения БД
-            for (const member of this.team) {
-                await sb.from('profiles').update({ 
-                    xp: 0, 
-                    current_week: 1, 
-                    used_dates: "" 
-                }).eq('id', member.id);
+            if (!confirm("Внимание! Это обнулит всё: койны и историю свиданий у обоих. Неделя сбросится на 1-ю. Подтверждаешь?")) return;
+            try {
+                const { data: teamToReset } = await sb.from('profiles').select('id').eq('pair_code', this.profile.pair_code);
+                for (const member of teamToReset) {
+                    await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', member.id);
+                }
+                alert("Сезон успешно обнулен!");
+                location.reload();
+            } catch (err) {
+                alert("Ошибка сброса.");
             }
-            
-            alert("Сезон успешно сброшен!");
-            location.reload();
         },
 
         logout() { localStorage.clear(); location.reload(); }
