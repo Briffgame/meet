@@ -13,37 +13,67 @@
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; }
         .container { width: 100%; max-width: 400px; }
-        .auth-card { background: #1e1e1e; padding: 30px; border-radius: 25px; border: 1px solid #333; text-align: center; }
-        input { width: 100%; padding: 16px; margin: 10px 0; background: #2a2a2a; border: 1px solid #444; border-radius: 12px; color: white; font-size: 16px; outline: none; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .primary { background: #00d4ff; color: #121212; }
-        .task-card { background: #1e1e1e; padding: 15px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid #2a2a2a; }
-        .controls { display: flex; gap: 8px; }
-        .add-btn { background: #00d4ff; width: 45px; height: 45px; border-radius: 12px; font-size: 1.5rem; border: none; color: #121212; font-weight: bold; }
-        .sub-btn { background: #333; color: #666; width: 45px; height: 45px; border-radius: 12px; border: none; font-size: 1.5rem; }
-        #loading-screen { margin-top: 100px; text-align: center; color: #00d4ff; }
-        #game-screen, #auth-screen { display: none; }
-        .error-msg { color: #ff4d4d; font-size: 0.8rem; margin-top: 10px; text-align: center; }
+        
+        /* Стили карточки прогресса */
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; position: relative; width: 100%; box-sizing: border-box; }
+        .lvl-badge { position: absolute; top: -10px; right: 15px; background: #00d4ff; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; width: 0%; transition: 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
+        .my-bar { background: #00d4ff; box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+        .p-bar { background: #ff007a; box-shadow: 0 0 10px rgba(255,0,122,0.3); }
+        
+        .task-card { background: #1e1e1e; padding: 15px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
+        .controls { display: flex; gap: 10px; }
+        .add-btn { background: #00d4ff; width: 50px; height: 50px; border-radius: 15px; font-size: 1.8rem; border: none; color: #121212; font-weight: bold; }
+        .sub-btn { background: #2a2a2a; color: #555; width: 50px; height: 50px; border-radius: 15px; border: none; font-size: 1.8rem; }
+        
+        .btn-reset { background: none; border: 1px dashed #444; color: #444; width: 100%; padding: 12px; border-radius: 12px; margin-top: 30px; font-size: 0.8rem; cursor: pointer; }
+        #loading-screen { margin-top: 100px; text-align: center; color: #00d4ff; font-weight: bold; }
+        #game-screen, #auth-screen { display: none; width: 100%; }
+        input { width: 100%; padding: 16px; margin: 10px 0; background: #2a2a2a; border: 1px solid #444; border-radius: 15px; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen">Загрузка системы...<div id="debug" style="font-size:10px; color:#444; margin-top:10px;"></div></div>
+<div id="loading-screen">Синхронизация данных...</div>
 
 <div class="container" id="auth-screen">
-    <h1 style="color: #00d4ff; text-align: center;">Briff Game</h1>
-    <div class="auth-card">
+    <h1 style="color: #00d4ff; text-align: center; margin-bottom: 30px;">Briff Game</h1>
+    <div style="background: #1e1e1e; padding: 25px; border-radius: 25px; border: 1px solid #333;">
         <input type="text" id="nick" placeholder="Твой Ник">
         <input type="password" id="pair-pass" placeholder="Пароль пары">
-        <button class="btn primary" onclick="app.handleLogin()">Войти</button>
-        <p style="font-size: 0.7rem; color: #666; margin-top: 15px;">Если нет аккаунта, создайте его в браузере</p>
+        <button onclick="app.handleLogin()" style="width:100%; padding:16px; background:#00d4ff; border:none; border-radius:15px; font-weight:bold; font-size:1rem; color:#121212;">Войти в игру</button>
     </div>
 </div>
 
 <div class="container" id="game-screen">
-    <h2 id="greet" style="text-align: center;">Привет!</h2>
+    <div style="text-align: center; margin-bottom: 25px;">
+        <h2 id="greet" style="margin:0; font-size: 1.5rem;">Кошелёк: Briff</h2>
+        <div id="week-tag" style="color: #666; font-size: 0.8rem; margin-top: 5px;">НЕДЕЛЯ 1 / 4</div>
+    </div>
+
+    <div class="stats-card">
+        <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
+        <div style="display:flex; justify-content:space-between; font-size: 0.9rem;">
+            <span id="l-my">Я</span>
+            <span id="v-my" style="font-weight:bold; color:#00d4ff;">0 🪙</span>
+        </div>
+        <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:20px; font-size: 0.9rem;">
+            <span id="l-p">Партнер</span>
+            <span id="v-p" style="font-weight:bold; color:#ff007a;">0 🪙</span>
+        </div>
+        <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
+    </div>
+
     <div id="tasks"></div>
-    <button onclick="app.logout()" style="background:none; border:none; color:#444; width:100%; margin-top:20px; text-decoration: underline;">Выйти</button>
+
+    <div id="admin-panel" style="display:none;">
+        <button class="btn-reset" onclick="app.manualReset()">СЛЕДУЮЩАЯ НЕДЕЛЯ (СБРОС КОЙНОВ)</button>
+    </div>
+    
+    <button onclick="app.logout()" style="background:none; border:none; color:#333; width:100%; margin-top:30px; font-size: 0.7rem;">Выйти из аккаунта</button>
 </div>
 
 <script>
@@ -52,29 +82,17 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const app = {
-        user: null,
+        user: null, profile: null,
         tasks: [{id:'pos', n:'Посуда', x:30},{id:'st', n:'Стирка', x:40},{id:'ub', n:'Уборка', x:100},{id:'sh', n:'Сушилка', x:20},{id:'zf', n:'Завтрак', x:60}],
+        lvls: ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"],
 
         async init() {
-            const n = localStorage.getItem('briff_nick');
-            const p = localStorage.getItem('briff_pass');
-            
+            const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
             if (n && p) {
-                try {
-                    const { data, error } = await sb.auth.signInWithPassword({ 
-                        email: `${n.toLowerCase()}@gmail.com`, 
-                        password: p 
-                    });
-                    if (error) throw error;
-                    this.user = data.user;
-                    this.showGame();
-                } catch (e) {
-                    console.error(e);
-                    this.showAuth();
-                }
-            } else {
-                this.showAuth();
+                const { data, error } = await sb.auth.signInWithPassword({ email: `${n.toLowerCase()}@gmail.com`, password: p });
+                if (!error) { this.user = data.user; await this.start(); return; }
             }
+            this.showAuth();
         },
 
         showAuth() {
@@ -83,36 +101,34 @@
         },
 
         async handleLogin() {
-            const n = document.getElementById('nick').value.trim();
-            const p = document.getElementById('pair-pass').value;
-            if(!n || !p) return alert("Введи данные!");
-
-            const { data, error } = await sb.auth.signInWithPassword({ 
-                email: `${n.toLowerCase()}@gmail.com`, 
-                password: p 
-            });
-
+            const n = document.getElementById('nick').value.trim(), p = document.getElementById('pair-pass').value;
+            const { data, error } = await sb.auth.signInWithPassword({ email: `${n.toLowerCase()}@gmail.com`, password: p });
             if (error) return alert("Ошибка: " + error.message);
-            
             localStorage.setItem('briff_nick', n);
             localStorage.setItem('briff_pass', p);
             this.user = data.user;
-            this.showGame();
+            location.reload();
         },
 
-        async showGame() {
-            const { data: pr } = await sb.from('profiles').select('nickname').eq('id', this.user.id).single();
+        async start() {
+            const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
+            this.profile = pr;
+            
+            if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-panel').style.display = 'block';
+            
             document.getElementById('loading-screen').style.display = 'none';
-            document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             document.getElementById('greet').innerText = `Кошелёк: ${pr.nickname}`;
+            
             this.renderTasks();
+            this.refresh();
+            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
 
         renderTasks() {
             document.getElementById('tasks').innerHTML = this.tasks.map(t => `
                 <div class="task-card">
-                    <div><b>${t.n}</b><br><small>+${t.x} 🪙</small></div>
+                    <div><b>${t.n}</b><br><small style="color:#666">+${t.x} 🪙</small></div>
                     <div class="controls">
                         <button class="sub-btn" onclick="app.doTask(${t.x*-1})">−</button>
                         <button class="add-btn" onclick="app.doTask(${t.x})">+</button>
@@ -121,25 +137,39 @@
         },
 
         async doTask(x) {
-            try {
-                const { data } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
-                const { error } = await sb.from('profiles').update({ xp: Math.max(0, data.xp + x) }).eq('id', this.user.id);
-                if (error) alert("Ошибка базы: " + error.message);
-                else {
-                    // Визуальный отклик для iPhone (легкая вибрация если поддерживается)
-                    if (window.navigator.vibrate) window.navigator.vibrate(10);
-                }
-            } catch (e) {
-                alert("Ошибка соединения");
-            }
+            const { data: current } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
+            const newXP = Math.max(0, (current.xp || 0) + x);
+            await sb.from('profiles').update({ xp: newXP }).eq('id', this.user.id);
+            this.refresh(); // Принудительное обновление после клика
         },
 
-        logout() {
-            localStorage.clear();
-            location.reload();
-        }
-    };
+        async refresh() {
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
+            
+            const week = me.current_week || 1;
+            document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
+            document.getElementById('lvl-badge').innerText = this.lvls[week-1] || "ЛЕГЕНДЫ";
 
+            const setBar = (fill, val, lab, name, xp) => {
+                document.getElementById(fill).style.width = Math.min((xp / 800) * 100, 100) + '%';
+                document.getElementById(val).innerText = `${xp} 🪙`;
+                document.getElementById(lab).innerText = name;
+            };
+
+            setBar('f-my', 'v-my', 'l-my', `Я (${me.nickname})`, me.xp);
+            if(p) setBar('f-p', 'v-p', 'l-p', p.nickname, p.xp);
+        },
+
+        async manualReset() {
+            if (!confirm("Сбросить койны и перейти на следующую неделю?")) return;
+            const nextW = (this.profile.current_week || 1) + 1;
+            await sb.from('profiles').update({ xp: 0, current_week: nextW }).eq('pair_code', this.profile.pair_code);
+            location.reload();
+        },
+
+        logout() { localStorage.clear(); location.reload(); }
+    };
     app.init();
 </script>
 </body>
