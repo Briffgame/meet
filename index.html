@@ -14,29 +14,13 @@
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
         .container { width: 100%; max-width: 400px; }
         
-        /* ЧЕСТНОЕ ЗОЛОТО (GRADIENT + SHADOW) */
         .gold-num { 
             background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: #FFD700; /* Fallback */
-            font-weight: 800; 
-            transition: 0.3s; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 4px;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            color: #FFD700; font-weight: 800; transition: 0.3s; display: inline-flex; align-items: center; gap: 4px;
         }
         
-        /* ИКОНКА ЗОЛОТОЙ МОНЕТЫ */
-        .coin-icon {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%);
-            border-radius: 50%;
-            border: 1px solid #DAA520;
-            box-shadow: 0 0 5px rgba(255,215,0,0.5);
-        }
+        .coin-icon { width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; box-shadow: 0 0 5px rgba(255,215,0,0.5); display: inline-block; }
 
         .pulse { transform: scale(1.3); }
 
@@ -52,19 +36,24 @@
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
         .controls { display: flex; gap: 10px; }
-        .btn-action { width: 55px; height: 55px; border-radius: 16px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; active { transform: scale(0.9); } }
+        .btn-action { width: 55px; height: 55px; border-radius: 16px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
+
+        /* ФУТЕР С КНОПКАМИ */
+        .footer-controls { width: 100%; margin-top: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 10px 20px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; width: 100%; max-width: 200px; }
+        .btn-admin { border-color: #00d4ff; color: #00d4ff; }
+        .btn-danger { border-color: #ff4d4d; color: #ff4d4d; }
 
         #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; box-shadow: 0 0 100px #000; }
         .date-option { background: #2a2a2a; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
         .week-selector { display: inline-block; background: #1e1e1e; border: 1px solid #00d4ff; padding: 10px 15px; border-radius: 12px; color: #00d4ff; font-size: 0.7rem; font-weight: bold; margin-top: 10px; }
-        .logout-btn { background: none; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px 20px; border-radius: 12px; font-size: 0.8rem; margin-top: 40px; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка Briff Game...</div>
+<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка...</div>
 
 <div class="container" id="game-screen" style="display:none;">
     <div id="news-bar"></div>
@@ -84,7 +73,10 @@
 
     <div id="tasks"></div>
 
-    <button class="logout-btn" onclick="app.logout()" style="width:100%;">ВЫЙТИ ИЗ АККАУНТА</button>
+    <div class="footer-controls">
+        <button id="admin-reset" class="btn-secondary btn-admin" style="display:none;" onclick="app.manualReset()">СБРОСИТЬ НЕДЕЛЮ</button>
+        <button class="btn-secondary btn-danger" onclick="app.logout()">ВЫЙТИ ИЗ АККАУНТА</button>
+    </div>
 
     <div id="date-market">
         <h3 style="text-align:center; color:#FFD700;">Выбор свидания</h3>
@@ -97,12 +89,10 @@
     const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Функция генерации иконки, чтобы не дублировать код
     const coinHTML = () => '<div class="coin-icon"></div>';
 
     const app = {
-        user: null, profile: null, team: [],
+        user: null, profile: null,
         tasks: [{id:'pos', n:'Посуда', x:30},{id:'st', n:'Стирка', x:40},{id:'ub', n:'Уборка', x:100},{id:'sh', n:'Сушилка', x:20},{id:'zf', n:'Завтрак', x:60}],
         allDates: [{n:"Карш и мак", p:150}, {n:"Роллы и Кино", p:200}, {n:"Настолки с вином", p:250}, {n:"Поход в кино", p:300}, {n:"Поход в бар", p:350}, {n:"Квиз", p:400}, {n:"Музей/Выставка", p:450}, {n:"Катание на лодочках", p:500}, {n:"Пикник", p:550}, {n:"Гастро тур", p:600}, {n:"Поход в Театр", p:700}, {n:"Мастер класс", p:800}],
 
@@ -126,6 +116,7 @@
         async start() {
             const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
             this.profile = pr;
+            if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             document.getElementById('label-me').innerText = pr.nickname;
@@ -144,13 +135,9 @@
         async doTask(val) {
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             await sb.from('profiles').update({ xp: Math.max(0, (cur.xp || 0) + val) }).eq('id', this.user.id);
-            
-            // Анимация при нажатии
-            const score = document.getElementById('v-my');
-            const card = document.getElementById('main-stats');
+            const score = document.getElementById('v-my'); const card = document.getElementById('main-stats');
             score.classList.add('pulse'); card.classList.add('flash-gold');
             setTimeout(() => { score.classList.remove('pulse'); card.classList.remove('flash-gold'); }, 400);
-
             this.refresh();
         },
 
@@ -158,23 +145,20 @@
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
             this.profile = me;
-
             document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
-            
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname;
                 document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
-                
                 const lastPDate = (p.used_dates || "").split(',').pop();
                 if (lastPDate && !me.used_dates?.includes(lastPDate)) {
-                    const n = document.getElementById('news-bar');
-                    n.style.display = 'block'; n.innerText = `${p.nickname} выбрал(а): ${lastPDate}! ✨`;
-                } else {
-                    document.getElementById('news-bar').style.display = 'none';
-                }
+                    document.getElementById('news-bar').style.display = 'block'; 
+                    document.getElementById('news-bar').innerText = `${p.nickname} выбрал(а): ${lastPDate}! ✨`;
+                } else { document.getElementById('news-bar').style.display = 'none'; }
             }
+            const week = me.current_week || 1;
+            document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4 (ТЕСТ ФИНАЛА)`;
         },
 
         testWin() {
@@ -184,9 +168,16 @@
         },
 
         async buy(name, price) {
-            if(!confirm(`Берем "${name}" за ${price} ${coinHTML()}?`)) return;
+            if(!confirm(`Берем "${name}" за ${price}?`)) return;
             const newUsed = this.profile.used_dates ? this.profile.used_dates + "," + name : name;
             await sb.from('profiles').update({ xp: this.profile.xp - price, used_dates: newUsed }).eq('id', this.user.id);
+            location.reload();
+        },
+
+        async manualReset() {
+            if (!confirm("Обнулить койны и ПЕРЕЙТИ на следующую неделю?")) return;
+            const nextW = (this.profile.current_week || 1) + 1;
+            await sb.from('profiles').update({ xp: 0, current_week: nextW }).eq('pair_code', this.profile.pair_code);
             location.reload();
         },
 
