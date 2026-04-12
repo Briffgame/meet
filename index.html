@@ -11,15 +11,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; }
+        body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 100px; }
         .container { width: 100%; max-width: 400px; }
 
-        /* ЗОЛОТОЙ СТИЛЬ */
         .gold { color: #FFD700; text-shadow: 0 0 10px rgba(255,215,0,0.5); font-weight: bold; }
         
-        #news-bar { display: none; background: linear-gradient(90deg, #FFD700, #FFA500); color: #000; padding: 12px; border-radius: 15px; margin-bottom: 20px; width: 100%; font-weight: bold; text-align: center; font-size: 0.9rem; box-shadow: 0 5px 15px rgba(255,215,0,0.4); }
+        #news-bar { display: none; background: linear-gradient(90deg, #FFD700, #FFA500); color: #000; padding: 12px; border-radius: 15px; margin-bottom: 20px; width: 100%; font-weight: bold; text-align: center; font-size: 0.9rem; }
 
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; position: relative; width: 100%; box-sizing: border-box; }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; }
         .progress-bar { width: 100%; height: 10px; background: #333; border-radius: 5px; overflow: hidden; margin-top: 10px; }
         .progress-fill { height: 100%; width: 0%; transition: 0.8s ease; }
         .my-bar { background: #00d4ff; }
@@ -28,11 +27,12 @@
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
         .add-btn { background: #00d4ff; width: 55px; height: 55px; border-radius: 16px; font-size: 2rem; border: none; font-weight: bold; color: #121212; }
         
-        #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; box-shadow: 0 0 100px #000; }
-        .date-option { background: #2a2a2a; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+        /* КНОПКА ВЫХОДА — ТЕПЕРЬ ЗАМЕТНАЯ */
+        .logout-section { width: 100%; margin-top: 50px; text-align: center; padding-bottom: 30px; }
+        .btn-exit { background: none; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px 30px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 
-        .logout-btn { background: none; border: none; color: #444; text-decoration: underline; font-size: 0.8rem; margin-top: 40px; cursor: pointer; padding: 10px; width: 100%; }
-        .week-selector { display: inline-block; background: #1e1e1e; border: 1px solid #00d4ff; padding: 10px 15px; border-radius: 12px; color: #00d4ff; font-size: 0.7rem; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; box-shadow: 0 0 100px #000; }
+        .week-selector { display: inline-block; background: #1e1e1e; border: 1px solid #00d4ff; padding: 10px 15px; border-radius: 12px; color: #00d4ff; font-size: 0.7rem; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -44,9 +44,7 @@
 
     <div style="text-align: center; margin-bottom: 25px;">
         <h2 id="greet" style="margin:0;">Briff</h2>
-        <div id="week-tag" class="week-selector" onclick="app.testWin()">
-            НЕДЕЛЯ 1 / 4 (ТЕСТ ФИНАЛА)
-        </div>
+        <div id="week-tag" class="week-selector" onclick="app.testWin()">НЕДЕЛЯ 1 / 4 (ТЕСТ ФИНАЛА)</div>
     </div>
 
     <div class="stats-card">
@@ -59,7 +57,9 @@
 
     <div id="tasks"></div>
 
-    <button class="logout-btn" onclick="app.logout()">ВЫЙТИ ИЗ АККАУНТА</button>
+    <div class="logout-section">
+        <button class="btn-exit" onclick="app.logout()">ВЫЙТИ ИЗ АККАУНТА</button>
+    </div>
 
     <div id="date-market">
         <h3 style="text-align:center; color:#FFD700;">Выбери свидание!</h3>
@@ -76,27 +76,30 @@
     const app = {
         user: null, profile: null,
         tasks: [{id:'pos', n:'Посуда', x:30},{id:'st', n:'Стирка', x:40},{id:'ub', n:'Уборка', x:100},{id:'sh', n:'Сушилка', x:20},{id:'zf', n:'Завтрак', x:60}],
-        allDates: [
-            {n:"Карш и мак", p:150}, {n:"Роллы и Кино", p:200}, {n:"Настолки с вином", p:250},
-            {n:"Поход в кино", p:300}, {n:"Поход в бар", p:350}, {n:"Квиз", p:400},
-            {n:"Музей/Выставка", p:450}, {n:"Катание на лодочках", p:500}, {n:"Пикник", p:550},
-            {n:"Гастро тур", p:600}, {n:"Поход в Театр", p:700}, {n:"Мастер класс", p:800}
-        ],
+        allDates: [{n:"Карш и мак", p:150}, {n:"Роллы и Кино", p:200}, {n:"Настолки с вином", p:250}, {n:"Поход в кино", p:300}, {n:"Поход в бар", p:350}, {n:"Квиз", p:400}, {n:"Музей/Выставка", p:450}, {n:"Катание на лодочках", p:500}, {n:"Пикник", p:550}, {n:"Гастро тур", p:600}, {n:"Поход в Театр", p:700}, {n:"Мастер класс", p:800}],
 
         async init() {
             const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
-            if (!n || !p) { this.showLogin(); return; }
-            
+            if (!n || !p) { this.askLogin(); return; }
             const { data, error } = await sb.auth.signInWithPassword({ email: `${n.toLowerCase()}@gmail.com`, password: p });
             if (error) { this.logout(); return; }
             this.user = data.user; await this.start();
         },
 
-        showLogin() {
-            document.getElementById('loading-screen').style.display = 'none';
-            // Если нет логина, просто редирект на твою страницу входа или просим ввести данные
-            const n = prompt("Введи свой ник:");
-            const p = prompt("Введи пароль пары:");
+        askLogin() {
+            document.getElementById('loading-screen').innerHTML = `
+                <div style="background:#1e1e1e; padding:20px; border-radius:20px; border:1px solid #333;">
+                    <h3 style="color:#00d4ff">Вход в Briff Game</h3>
+                    <input type="text" id="n_in" placeholder="Ник" style="width:90%; padding:10px; margin:10px 0; background:#2a2a2a; border:1px solid #444; color:white; border-radius:10px;">
+                    <input type="password" id="p_in" placeholder="Пароль пары" style="width:90%; padding:10px; margin:10px 0; background:#2a2a2a; border:1px solid #444; color:white; border-radius:10px;">
+                    <button onclick="app.saveLogin()" style="width:100%; background:#00d4ff; padding:15px; border:none; border-radius:10px; font-weight:bold;">ВОЙТИ</button>
+                </div>
+            `;
+        },
+
+        saveLogin() {
+            const n = document.getElementById('n_in').value.trim();
+            const p = document.getElementById('p_in').value;
             if(n && p) {
                 localStorage.setItem('briff_nick', n);
                 localStorage.setItem('briff_pass', p);
@@ -109,6 +112,7 @@
             this.profile = pr;
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('greet').innerText = `Кошелёк: ${pr.nickname}`;
             this.renderTasks(); this.refresh();
             sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
@@ -124,30 +128,49 @@
         async doTask(x) {
             const { data } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             await sb.from('profiles').update({ xp: (data.xp || 0) + x }).eq('id', this.user.id);
-            this.refresh();
         },
 
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            
             document.getElementById('v-my').innerText = `${me.xp} 🪙`;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
-            
             if(p) {
                 document.getElementById('v-p').innerText = `${p.xp} 🪙`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
-                
                 const lastDate = (p.used_dates || "").split(',').pop();
                 if (lastDate && !me.used_dates?.includes(lastDate)) {
                     const news = document.getElementById('news-bar');
-                    news.style.display = 'block';
-                    news.innerText = `${p.nickname} выбрал(а): ${lastDate}! ✨`;
+                    news.style.display = 'block'; news.innerText = `${p.nickname} выбрал(а): ${lastDate}! ✨`;
                 }
             }
         },
 
         testWin() {
             const me = this.profile;
-            const allUsed = this.team?.map(u => u.used_dates || "").join(',').split(',').filter(x => x) || [];
-            let available = this.allDates.filter
+            const random3 = this.allDates.sort(() => 0.5 - Math.random()).slice(0, 3);
+            document.getElementById('date-market').style.display = 'block';
+            document.getElementById('date-options').innerHTML = random3.map(d => `
+                <div class="date-option">
+                    <span>${d.n} <br><small class="gold">${d.p} 🪙</small></span>
+                    <button onclick="app.buy('${d.n}', ${d.p})" style="background:#2ecc71; border:none; padding:8px 15px; border-radius:10px; color:white; font-weight:bold;">Выбрать</button>
+                </div>
+            `).join('');
+        },
+
+        async buy(name, price) {
+            if(!confirm(`Выбираем "${name}"?`)) return;
+            const newUsed = this.profile.used_dates ? this.profile.used_dates + "," + name : name;
+            await sb.from('profiles').update({ xp: this.profile.xp - price, used_dates: newUsed }).eq('id', this.user.id);
+            location.reload();
+        },
+
+        logout() {
+            localStorage.clear();
+            location.reload();
+        }
+    };
+    app.init();
+</script>
+</body>
+</html>
