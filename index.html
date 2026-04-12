@@ -50,7 +50,8 @@
         #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; box-shadow: 0 0 100px #000; }
         .date-option { background: #2a2a2a; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
         
-        #shop-trigger-btn { display: none; width: 100%; background: #FFD700; color: #121212; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: none; font-size: 1rem; box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
+        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1rem; transition: 0.3s; }
+        #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 15px rgba(255,215,0,0.3); color: #121212; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -74,7 +75,7 @@
         <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
 
-    <button id="shop-trigger-btn" onclick="app.openMarket()">ВЫБРАТЬ СВИДАНИЕ 🥂</button>
+    <button id="shop-trigger-btn" disabled onclick="app.openMarket()">ВЫБРАТЬ СВИДАНИЕ 🥂</button>
 
     <div id="tasks"></div>
 
@@ -172,22 +173,33 @@
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
             document.getElementById('lvl-badge').innerText = this.lvls[week-1] || "ЛЕГЕНДЫ";
 
-            // Логика кнопки маркета (только Пт 18:00+ и для лидера)
+            // ЛОГИКА АКТИВАЦИИ КНОПКИ
             const now = new Date(), day = now.getDay(), hrs = now.getHours();
             const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
             const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
             
-            if (isFridayTime && me.id === leader.id && me.xp >= 150) {
-                document.getElementById('shop-trigger-btn').style.display = 'block';
+            const shopBtn = document.getElementById('shop-trigger-btn');
+            if (isFridayTime) {
+                if (me.id === leader.id && me.xp >= 150) {
+                    shopBtn.disabled = false;
+                    shopBtn.classList.add('active');
+                    shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
+                } else {
+                    shopBtn.disabled = true;
+                    shopBtn.classList.remove('active');
+                    shopBtn.innerText = "ПОБЕДА ЗА ПАРТНЕРОМ 🏆";
+                }
             } else {
-                document.getElementById('shop-trigger-btn').style.display = 'none';
+                shopBtn.disabled = true;
+                shopBtn.classList.remove('active');
+                shopBtn.innerText = "ВЫБОР В ПЯТНИЦУ 18:00 ⏳";
             }
         },
 
         openMarket() {
             const allUsed = this.team.map(u => u.used_dates || "").join(',').split(',').filter(x => x);
             let available = this.allDates.filter(d => !allUsed.includes(d.n) && this.profile.xp >= d.p);
-            if (available.length === 0) return alert("Недостаточно койнов для свиданий!");
+            if (available.length === 0) return alert("Недостаточно койнов!");
             
             const random3 = available.sort(() => 0.5 - Math.random()).slice(0, 3);
             document.getElementById('date-market').style.display = 'block';
@@ -202,8 +214,8 @@
         },
 
         async manualReset() {
-            if (!confirm("Это обнулит койны обоих и ВЕРНЕТ на 1-ю неделю. Уверен?")) return;
-            await sb.from('profiles').update({ xp: 0, current_week: 1 }).eq('pair_code', this.profile.pair_code);
+            if (!confirm("Обнулить сезон и вернуться на 1-ю неделю?")) return;
+            await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('pair_code', this.profile.pair_code);
             location.reload();
         },
 
