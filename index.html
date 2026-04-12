@@ -121,4 +121,19 @@
             const week = me.current_week || 1;
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
-            document.getElementById('lvl-badge').innerText = lvls[week
+            document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
+        },
+
+        async manualReset() {
+            if (!confirm("Внимание! Ты сбросишь сезон для себя и для Оли. Уверен?")) return;
+            // Обнуляем твой профиль. У Оли сработает авто-сброс в функции refresh()
+            const { error } = await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
+            if (!error) { alert("Сезон обнулен!"); location.reload(); }
+        },
+
+        logout() { localStorage.clear(); location.reload(); }
+    };
+    app.init();
+</script>
+</body>
+</html>
