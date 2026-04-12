@@ -14,18 +14,36 @@
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
         .container { width: 100%; max-width: 400px; }
-        .gold-num { background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+        
+        .gold-num { 
+            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            font-weight: 800; 
+            font-size: 1.5rem; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px;
+            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* КЛАСС ДЛЯ АНИМАЦИИ */
+        .pulse { transform: scale(1.2); text-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; box-shadow: 0 0 8px rgba(255,215,0,0.6); display: inline-block; }
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; transition: 0.3s; }
+        
+        /* ВСПЫШКА КАРТОЧКИ */
+        .flash-gold { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
-        .progress-fill { height: 100%; width: 0%; transition: 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
-        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); box-shadow: 0 0 10px rgba(0,212,255,0.4); }
-        .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); box-shadow: 0 0 10px rgba(255,0,122,0.4); }
+        .progress-fill { height: 100%; width: 0%; transition: 0.5s ease; }
+        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
+        .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
-        .controls { display: flex; gap: 12px; align-items: center; }
-        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; }
-        .btn-action:active { transform: scale(0.9); }
+        .controls { display: flex; gap: 12px; }
+        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .plus { background: #00d4ff; color: #121212; order: 2; }
         .minus { background: #2a2a2a; color: #666; order: 1; }
         .footer-controls { width: 100%; margin-top: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
@@ -52,8 +70,8 @@
         <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
         
         <div style="display:flex; justify-content:space-between; align-items: flex-end; margin-top:25px;">
-            <span id="label-p" style="color:#888; font-weight: bold;">ОЛЯ</span>
-            <span id="v-p" class="gold-num" style="background: none; -webkit-text-fill-color: #ff007a; color: #ff007a; text-shadow: 0 0 15px rgba(255, 0, 122, 0.3);">0 <div class="coin-icon"></div></span>
+            <span id="label-p" style="color:#888; font-weight: bold;">ПАРТНЕР</span>
+            <span id="v-p" class="gold-num" style="background: none; -webkit-text-fill-color: #ff007a; color: #ff007a;">0 <div class="coin-icon"></div></span>
         </div>
         <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
@@ -99,8 +117,13 @@
             if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
-            this.renderTasks(); this.refresh();
-            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
+            this.renderTasks(); 
+            this.refresh(true); // Первый запуск без анимации
+            
+            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},(payload)=>{
+                // Если изменился мой профиль - не перезагружаем страницу, а просто обновляем цифры
+                this.refresh(payload.new.id !== this.user.id); 
+            }).subscribe();
         },
 
         renderTasks() {
@@ -115,23 +138,41 @@
         },
 
         async doTask(val) {
+            // АНИМАЦИЯ НАЖАТИЯ
+            const score = document.getElementById('v-my');
+            const card = document.getElementById('main-stats');
+            score.classList.add('pulse'); card.classList.add('flash-gold');
+            setTimeout(() => { score.classList.remove('pulse'); card.classList.remove('flash-gold'); }, 400);
+
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
-            await sb.from('profiles').update({ xp: Math.max(0, (cur.xp || 0) + val) }).eq('id', this.user.id);
-            this.refresh();
+            const newXp = Math.max(0, (cur.xp || 0) + val);
+            await sb.from('profiles').update({ xp: newXp }).eq('id', this.user.id);
+            
+            // Локально обновляем, чтобы не ждать базу
+            this.profile.xp = newXp;
+            this.updateUI(this.profile, this.lastPartnerData);
         },
 
-        async refresh() {
-            await sb.auth.getSession();
+        lastPartnerData: null,
+
+        async refresh(forceReload = false) {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if(!team) return;
-            const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
+            const me = team.find(x => x.id === this.user.id);
+            const p = team.find(x => x.id !== this.user.id);
+            this.lastPartnerData = p;
 
-            if (p && p.current_week === 1 && p.xp === 0 && (this.profile.current_week !== 1 || this.profile.xp !== 0)) {
-                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
+            // СИНХРОНИЗАЦИЯ СБРОСА (только если реально сброс)
+            if (p && p.current_week === 1 && p.xp === 0 && me.current_week !== 1 && forceReload) {
+                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', me.id);
                 location.reload(); return;
             }
 
-            this.profile = me;
+            this.updateUI(me, p);
+            this.updateShopButton(me, team);
+        },
+
+        updateUI(me, p) {
             document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
             if(p) {
@@ -139,12 +180,10 @@
                 document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
             }
-
             const week = me.current_week || 1;
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
             document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
-            this.updateShopButton(me, team);
         },
 
         updateShopButton(me, team) {
