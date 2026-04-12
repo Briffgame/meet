@@ -19,7 +19,7 @@
         .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; font-size: 1rem; }
         .primary { background: #00d4ff; color: #121212; }
         .secondary { background: transparent; color: #666; font-size: 0.8rem; margin-top: 20px; border: none; cursor: pointer; text-decoration: underline; }
-        #game-screen, .hidden, #loading-screen { display: none; }
+        #game-screen, .hidden, #loading-screen, #admin-panel { display: none; }
         #loading-screen { display: block; margin-top: 50px; color: #00d4ff; font-weight: bold; }
         .stats-card { background: #1e1e1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #333; }
         .progress-container { margin: 15px 0; }
@@ -32,6 +32,7 @@
         .controls { display: flex; gap: 10px; }
         .add-btn { background: #00d4ff; border: none; width: 45px; height: 45px; border-radius: 12px; font-size: 1.8rem; font-weight: bold; cursor: pointer; color: #121212; }
         .sub-btn { background: #333; border: 1px solid #444; width: 45px; height: 45px; border-radius: 12px; font-size: 1.8rem; font-weight: bold; cursor: pointer; color: #888; }
+        .admin-btn { margin-top: 40px; padding: 10px; border: 1px dashed #444; color: #444; background: none; border-radius: 10px; font-size: 0.7rem; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -65,7 +66,12 @@
         </div>
     </div>
     <div id="tasks"></div>
-    <button class="secondary" onclick="app.logout()" style="margin-top:30px; width:100%; color: #ff4d4d; border: 1px solid #ff4d4d; text-decoration: none; border-radius: 10px; padding: 10px;">Выйти из системы</button>
+    
+    <div id="admin-panel">
+        <button class="admin-btn" onclick="app.resetWeek()">СБРОСИТЬ НЕДЕЛЮ (XP = 0)</button>
+    </div>
+
+    <button class="secondary" onclick="app.logout()" style="margin-top:30px; width:100%; color: #666; text-decoration: none;">Выйти из системы</button>
 </div>
 
 <script>
@@ -132,50 +138,5 @@
             const { data: pr, error } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
             if(error || !pr) { this.logout(); return; }
             this.profile = pr;
-            document.getElementById('loading-screen').style.display = 'none';
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
-            document.getElementById('greet').innerText = `Привет, ${pr.nickname}!`;
-            this.render(); this.refresh();
-            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
-        },
-
-        render() {
-            document.getElementById('tasks').innerHTML = this.taskList.map(t => `
-                <div class="task-card">
-                    <div><b>${t.n}</b><br><small>+${t.x} XP</small></div>
-                    <div class="controls">
-                        <button class="sub-btn" onclick="app.doTask('${t.id}', -${t.x})">−</button>
-                        <button class="add-btn" onclick="app.doTask('${t.id}', ${t.x})">+</button>
-                    </div>
-                </div>`).join('');
-        },
-
-        async doTask(id, x) {
-            const { data } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
-            let newXP = data.xp + x;
-            if (newXP < 0) newXP = 0; // Защита от минуса
             
-            await sb.from('profiles').update({ xp: newXP }).eq('id', this.user.id);
-            this.refresh();
-        },
-
-        async refresh() {
-            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
-            if(!team) return;
-            const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            const upd = (fill, val, lab, name, xp) => {
-                document.getElementById(fill).style.width = Math.min((xp / 500) * 100, 100) + '%';
-                document.getElementById(val).innerText = `${xp} XP`;
-                document.getElementById(lab).innerText = name;
-            };
-            if(me) upd('f-my', 'v-my', 'l-my', `Я (${me.nickname})`, me.xp);
-            if(p) upd('f-p', 'v-p', 'l-p', p.nickname, p.xp);
-        },
-
-        logout() { localStorage.clear(); location.reload(); }
-    };
-    app.init();
-</script>
-</body>
-</html>
+            // ПРОВЕРКА НА АДМИНА (только для ника
