@@ -51,7 +51,7 @@
         .date-option { background: #2a2a2a; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
         
         #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1rem; transition: 0.3s; }
-        #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 15px rgba(255,215,0,0.3); color: #121212; cursor: pointer; }
+        #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 15px rgba(255,215,0,0.3); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -161,7 +161,7 @@
                 document.getElementById('label-p').innerText = p.nickname;
                 document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
-                const pUsed = (p.used_dates || "").split(',');
+                const pUsed = (p.used_dates || "").split(',').filter(x => x);
                 const lastP = pUsed[pUsed.length-1];
                 if (lastP && !(me.used_dates || "").includes(lastP)) {
                     document.getElementById('news-bar').style.display = 'block'; 
@@ -173,7 +173,6 @@
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
             document.getElementById('lvl-badge').innerText = this.lvls[week-1] || "ЛЕГЕНДЫ";
 
-            // ЛОГИКА АКТИВАЦИИ КНОПКИ
             const now = new Date(), day = now.getDay(), hrs = now.getHours();
             const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
             const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
@@ -181,17 +180,14 @@
             const shopBtn = document.getElementById('shop-trigger-btn');
             if (isFridayTime) {
                 if (me.id === leader.id && me.xp >= 150) {
-                    shopBtn.disabled = false;
-                    shopBtn.classList.add('active');
+                    shopBtn.disabled = false; shopBtn.classList.add('active');
                     shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
                 } else {
-                    shopBtn.disabled = true;
-                    shopBtn.classList.remove('active');
+                    shopBtn.disabled = true; shopBtn.classList.remove('active');
                     shopBtn.innerText = "ПОБЕДА ЗА ПАРТНЕРОМ 🏆";
                 }
             } else {
-                shopBtn.disabled = true;
-                shopBtn.classList.remove('active');
+                shopBtn.disabled = true; shopBtn.classList.remove('active');
                 shopBtn.innerText = "ВЫБОР В ПЯТНИЦУ 18:00 ⏳";
             }
         },
@@ -214,8 +210,18 @@
         },
 
         async manualReset() {
-            if (!confirm("Обнулить сезон и вернуться на 1-ю неделю?")) return;
-            await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('pair_code', this.profile.pair_code);
+            if (!confirm("Это обнулит койны и историю свиданий у ОБОИХ и вернет на 1-ю неделю. Уверен?")) return;
+            
+            // Сбрасываем каждого по ID, чтобы точно обойти ограничения БД
+            for (const member of this.team) {
+                await sb.from('profiles').update({ 
+                    xp: 0, 
+                    current_week: 1, 
+                    used_dates: "" 
+                }).eq('id', member.id);
+            }
+            
+            alert("Сезон успешно сброшен!");
             location.reload();
         },
 
