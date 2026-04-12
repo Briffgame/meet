@@ -26,8 +26,10 @@
 
         #news-bar { display: none; background: linear-gradient(90deg, #FFD700, #FFA500); color: #000; padding: 15px; border-radius: 15px; margin-bottom: 20px; width: 100%; font-weight: bold; text-align: center; box-shadow: 0 5px 15px rgba(255,215,0,0.3); }
 
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; transition: 0.3s; }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; transition: 0.3s; position: relative; }
         .flash-gold { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+
+        .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
 
         .progress-bar { width: 100%; height: 10px; background: #333; border-radius: 5px; overflow: hidden; margin-top: 10px; }
         .progress-fill { height: 100%; width: 0%; transition: 0.5s ease; }
@@ -40,7 +42,6 @@
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
 
-        /* ФУТЕР С КНОПКАМИ */
         .footer-controls { width: 100%; margin-top: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 10px 20px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; width: 100%; max-width: 200px; }
         .btn-admin { border-color: #00d4ff; color: #00d4ff; }
@@ -48,22 +49,24 @@
 
         #date-market { display: none; background: #1e1e1e; padding: 25px; border-radius: 30px; border: 2px solid #FFD700; position: fixed; top: 10%; left: 5%; width: 90%; max-width: 360px; z-index: 1000; box-sizing: border-box; box-shadow: 0 0 100px #000; }
         .date-option { background: #2a2a2a; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
-        .week-selector { display: inline-block; background: #1e1e1e; border: 1px solid #00d4ff; padding: 10px 15px; border-radius: 12px; color: #00d4ff; font-size: 0.7rem; font-weight: bold; margin-top: 10px; }
+        
+        #shop-trigger-btn { display: none; width: 100%; background: #FFD700; color: #121212; padding: 16px; border-radius: 15px; font-weight: bold; margin-bottom: 20px; border: none; font-size: 1rem; box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
     </style>
 </head>
 <body>
 
-<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка...</div>
+<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка Briff Game...</div>
 
 <div class="container" id="game-screen" style="display:none;">
     <div id="news-bar"></div>
 
     <div style="text-align: center; margin-bottom: 25px;">
         <h2 id="greet" style="margin:0;">Briff</h2>
-        <div id="week-tag" class="week-selector" onclick="app.testWin()">НЕДЕЛЯ 1 / 4 (ТЕСТ ФИНАЛА)</div>
+        <div id="week-tag" style="color: #666; font-size: 0.8rem; margin-top: 5px; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
     </div>
 
     <div id="main-stats" class="stats-card">
+        <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
         <div style="display:flex; justify-content:space-between;"><span id="label-me" style="color:#888;">Загрузка...</span><span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span></div>
         <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
         
@@ -71,15 +74,18 @@
         <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
 
+    <button id="shop-trigger-btn" onclick="app.openMarket()">ВЫБРАТЬ СВИДАНИЕ 🥂</button>
+
     <div id="tasks"></div>
 
     <div class="footer-controls">
-        <button id="admin-reset" class="btn-secondary btn-admin" style="display:none;" onclick="app.manualReset()">СБРОСИТЬ НЕДЕЛЮ</button>
+        <button id="admin-reset" class="btn-secondary btn-admin" style="display:none;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
         <button class="btn-secondary btn-danger" onclick="app.logout()">ВЫЙТИ ИЗ АККАУНТА</button>
     </div>
 
     <div id="date-market">
-        <h3 style="text-align:center; color:#FFD700;">Выбор свидания</h3>
+        <h3 style="text-align:center; color:#FFD700;">Свидание Недели</h3>
+        <p style="font-size: 0.7rem; color: #888; text-align: center; margin-bottom: 15px;">Выбери один из 3 вариантов:</p>
         <div id="date-options"></div>
         <button onclick="document.getElementById('date-market').style.display='none'" style="width:100%; background:none; color:#666; border:none; margin-top:10px; padding:10px;">Закрыть</button>
     </div>
@@ -92,9 +98,10 @@
     const coinHTML = () => '<div class="coin-icon"></div>';
 
     const app = {
-        user: null, profile: null,
+        user: null, profile: null, team: [],
         tasks: [{id:'pos', n:'Посуда', x:30},{id:'st', n:'Стирка', x:40},{id:'ub', n:'Уборка', x:100},{id:'sh', n:'Сушилка', x:20},{id:'zf', n:'Завтрак', x:60}],
         allDates: [{n:"Карш и мак", p:150}, {n:"Роллы и Кино", p:200}, {n:"Настолки с вином", p:250}, {n:"Поход в кино", p:300}, {n:"Поход в бар", p:350}, {n:"Квиз", p:400}, {n:"Музей/Выставка", p:450}, {n:"Катание на лодочках", p:500}, {n:"Пикник", p:550}, {n:"Гастро тур", p:600}, {n:"Поход в Театр", p:700}, {n:"Мастер класс", p:800}],
+        lvls: ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"],
 
         async init() {
             const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
@@ -144,40 +151,59 @@
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            this.profile = me;
+            this.team = team; this.profile = me;
+
             document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
+            
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname;
                 document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
-                const lastPDate = (p.used_dates || "").split(',').pop();
-                if (lastPDate && !me.used_dates?.includes(lastPDate)) {
+                const pUsed = (p.used_dates || "").split(',');
+                const lastP = pUsed[pUsed.length-1];
+                if (lastP && !(me.used_dates || "").includes(lastP)) {
                     document.getElementById('news-bar').style.display = 'block'; 
-                    document.getElementById('news-bar').innerText = `${p.nickname} выбрал(а): ${lastPDate}! ✨`;
+                    document.getElementById('news-bar').innerText = `${p.nickname} выбрал(а): ${lastP}! ✨`;
                 } else { document.getElementById('news-bar').style.display = 'none'; }
             }
+
             const week = me.current_week || 1;
-            document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4 (ТЕСТ ФИНАЛА)`;
+            document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
+            document.getElementById('lvl-badge').innerText = this.lvls[week-1] || "ЛЕГЕНДЫ";
+
+            // Логика кнопки маркета (только Пт 18:00+ и для лидера)
+            const now = new Date(), day = now.getDay(), hrs = now.getHours();
+            const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
+            const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
+            
+            if (isFridayTime && me.id === leader.id && me.xp >= 150) {
+                document.getElementById('shop-trigger-btn').style.display = 'block';
+            } else {
+                document.getElementById('shop-trigger-btn').style.display = 'none';
+            }
         },
 
-        testWin() {
-            const random3 = this.allDates.sort(() => 0.5 - Math.random()).slice(0, 3);
+        openMarket() {
+            const allUsed = this.team.map(u => u.used_dates || "").join(',').split(',').filter(x => x);
+            let available = this.allDates.filter(d => !allUsed.includes(d.n) && this.profile.xp >= d.p);
+            if (available.length === 0) return alert("Недостаточно койнов для свиданий!");
+            
+            const random3 = available.sort(() => 0.5 - Math.random()).slice(0, 3);
             document.getElementById('date-market').style.display = 'block';
             document.getElementById('date-options').innerHTML = random3.map(d => `<div class="date-option"><span>${d.n} <br><small class="gold-num">${d.p} ${coinHTML()}</small></span><button onclick="app.buy('${d.n}', ${d.p})" style="background:#2ecc71; border:none; padding:8px 15px; border-radius:10px; color:white; font-weight:bold;">Выбрать</button></div>`).join('');
         },
 
         async buy(name, price) {
-            if(!confirm(`Берем "${name}" за ${price}?`)) return;
+            if(!confirm(`Берем "${name}"?`)) return;
             const newUsed = this.profile.used_dates ? this.profile.used_dates + "," + name : name;
             await sb.from('profiles').update({ xp: this.profile.xp - price, used_dates: newUsed }).eq('id', this.user.id);
             location.reload();
         },
 
         async manualReset() {
-            if (!confirm("Обнулить койны и ПЕРЕЙТИ на следующую неделю?")) return;
-            const nextW = (this.profile.current_week || 1) + 1;
-            await sb.from('profiles').update({ xp: 0, current_week: nextW }).eq('pair_code', this.profile.pair_code);
+            if (!confirm("Это обнулит койны обоих и ВЕРНЕТ на 1-ю неделю. Уверен?")) return;
+            await sb.from('profiles').update({ xp: 0, current_week: 1 }).eq('pair_code', this.profile.pair_code);
             location.reload();
         },
 
