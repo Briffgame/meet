@@ -19,8 +19,10 @@
         .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; font-size: 1rem; }
         .primary { background: #00d4ff; color: #121212; }
         .secondary { background: transparent; color: #666; font-size: 0.8rem; margin-top: 20px; border: none; cursor: pointer; text-decoration: underline; }
+        
         #game-screen, .hidden, #loading-screen { display: none; }
-        #loading-screen { display: block; margin-top: 50px; color: #888; }
+        #loading-screen { display: block; margin-top: 50px; color: #00d4ff; font-weight: bold; }
+        
         .stats-card { background: #1e1e1e; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #333; }
         .progress-container { margin: 15px 0; }
         .label-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; }
@@ -34,7 +36,7 @@
 </head>
 <body>
 
-<div id="loading-screen">Загрузка...</div>
+<div id="loading-screen">Загрузка игры...</div>
 
 <div class="container" id="auth-screen" style="display:none;">
     <h1 style="color: #00d4ff; margin-bottom: 5px;">Briff Game</h1>
@@ -63,25 +65,27 @@
         </div>
     </div>
     <div id="tasks"></div>
-    <button class="secondary" onclick="app.logout()" style="margin-top:20px; width:100%;">Выйти из аккаунта</button>
+    <button class="secondary" onclick="app.logout()" style="margin-top:30px; width:100%; color: #ff4d4d; border: 1px solid #ff4d4d; text-decoration: none; border-radius: 10px; padding: 10px;">Выйти из системы</button>
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
+    // --- ДАННЫЕ SUPABASE ---
+ const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const app = {
         isLogin: true,
-        user: null, profile: null,
+        user: null, 
+        profile: null,
         taskList: [{id:'d',n:'Посуда',x:50},{id:'t',n:'Мусор',x:20},{id:'c',n:'Уборка',x:100}],
 
         async init() {
-            // Проверка: есть ли сохраненные данные?
             const savedNick = localStorage.getItem('briff_nick');
             const savedPass = localStorage.getItem('briff_pass');
 
             if (savedNick && savedPass) {
+                console.log("Найдены сохраненные данные, входим...");
                 await this.login(savedNick, savedPass, true);
             } else {
                 this.showAuth();
@@ -110,8 +114,11 @@
             } else {
                 const techEmail = `${n.toLowerCase()}@gmail.com`;
                 const { data, error } = await sb.auth.signUp({ email: techEmail, password: p });
-                if(error) return alert("Ошибка: " + error.message);
-                await sb.from('profiles').insert({ id: data.user.id, nickname: n, pair_code: p, xp: 0, level_name: 'Новички' });
+                if(error) return alert("Ошибка регистрации: " + error.message);
+                
+                const { error: pErr } = await sb.from('profiles').insert({ id: data.user.id, nickname: n, pair_code: p, xp: 0, level_name: 'Новички' });
+                if(pErr) console.error(pErr);
+                
                 alert("Аккаунт создан! Теперь входи.");
                 this.toggle();
             }
@@ -122,27 +129,35 @@
             const { data, error } = await sb.auth.signInWithPassword({ email: techEmail, password: p });
             
             if(error) {
-                if(!isAuto) alert("Ошибка входа!");
+                console.error("Ошибка Supabase:", error.message);
+                if(!isAuto) alert("Ошибка: " + error.message);
+                localStorage.clear();
                 this.showAuth();
                 return;
             }
 
-            // Запоминаем для авто-входа
             localStorage.setItem('briff_nick', n);
             localStorage.setItem('briff_pass', p);
-
             this.user = data.user;
             await this.start();
         },
 
         async start() {
-            const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
+            const { data: pr, error } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
+            if(error || !pr) {
+                alert("Профиль не найден в базе данных.");
+                this.logout();
+                return;
+            }
+
             this.profile = pr;
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             document.getElementById('greet').innerText = `Привет, ${pr.nickname}!`;
-            this.render(); this.refresh();
+            this.render(); 
+            this.refresh();
+            
             sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
 
@@ -162,6 +177,7 @@
 
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            if(!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
             const upd = (fill, val, lab, name, xp) => {
                 document.getElementById(fill).style.width = Math.min((xp / 500) * 100, 100) + '%';
@@ -178,7 +194,6 @@
         }
     };
 
-    // Запуск при загрузке
     app.init();
 </script>
 </body>
