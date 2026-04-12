@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Кошелек Свиданий</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/b-key.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
@@ -56,7 +59,6 @@
     </div>
 
     <button id="shop-trigger-btn" disabled>ВЫБРАТЬ СВИДАНИЕ 🥂</button>
-    
     <div id="tasks"></div>
 
     <div class="footer-controls">
@@ -119,6 +121,7 @@
         },
 
         async refresh() {
+            await sb.auth.getSession();
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if(!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
@@ -128,6 +131,7 @@
                 location.reload(); return;
             }
 
+            this.profile = me;
             document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
             if(p) {
@@ -140,7 +144,6 @@
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
             document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
-            
             this.updateShopButton(me, team);
         },
 
@@ -149,9 +152,7 @@
             const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
             const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
             const shopBtn = document.getElementById('shop-trigger-btn');
-            
-            shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂"; // Всегда один текст
-            
+            shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
             if (isFridayTime && me.id === leader.id && me.xp >= 150) {
                 shopBtn.disabled = false; shopBtn.classList.add('active');
             } else {
@@ -160,7 +161,7 @@
         },
 
         async manualReset() {
-            if (!confirm("Это полностью обнулит сезон для ОБОИХ. Уверен?")) return;
+            if (!confirm("Обнулить сезон?")) return;
             await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
             location.reload();
         },
