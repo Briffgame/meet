@@ -15,36 +15,32 @@
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
         .container { width: 100%; max-width: 400px; }
         
-        /* ЧЕСТНОЕ ЗОЛОТО: ГРАДИЕНТ И ТЕНЬ */
         .gold-num { 
             background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
-            font-weight: 800; 
-            font-size: 1.5rem; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 6px;
-            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px;
             text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }
         
-        /* АНИМАЦИЯ ПУЛЬСАЦИИ */
-        .pulse { transform: scale(1.2); text-shadow: 0 0 25px rgba(255, 215, 0, 0.7); }
+        .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
 
-        /* ИКОНКА МОНЕТКИ (РИСОВАННАЯ) */
-        .coin-icon { 
-            width: 20px; height: 20px; 
-            background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); 
-            border-radius: 50%; 
-            border: 1px solid #DAA520; 
-            box-shadow: 0 0 8px rgba(255,215,0,0.6); 
-            display: inline-block; 
+        /* Плашка уведомления о выбранном свидании */
+        #last-selection-alert { 
+            background: rgba(255, 215, 0, 0.1); 
+            border: 1px dashed #FFD700; 
+            color: #FFD700; 
+            padding: 15px; 
+            border-radius: 15px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+            font-size: 0.9rem; 
+            display: none; 
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .flash-gold { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
-
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
         .progress-fill { height: 100%; width: 0%; transition: 0.8s ease; }
@@ -52,66 +48,72 @@
         .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
-        .controls { display: flex; gap: 12px; }
-        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; }
-        .btn-action:active { transform: scale(0.9); }
-        
-        /* ПЛЮС СПРАВА, МИНУС СЛЕВА */
-        .plus { background: #00d4ff; color: #121212; order: 2; }
-        .minus { background: #2a2a2a; color: #666; order: 1; }
+        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .plus { background: #00d4ff; color: #121212; }
+        .minus { background: #2a2a2a; color: #666; }
 
-        .footer-controls { width: 100%; margin-top: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 12px 20px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; width: 100%; max-width: 220px; }
-        #admin-reset { border-color: #ff4444; color: #ff4444; margin-bottom: 10px; }
-        
         #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1.1rem; }
         #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 20px rgba(255,215,0,0.4); cursor: pointer; }
+
+        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; text-align: center; font-weight: bold; cursor: pointer; }
+
+        .footer-controls { width: 100%; margin-top: 30px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 12px 20px; border-radius: 15px; font-size: 0.8rem; width: 100%; max-width: 200px; }
     </style>
 </head>
 <body>
+
 <div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
+
 <div class="container" id="game-screen" style="display:none;">
-    <div style="text-align: center; margin-bottom: 25px;">
-        <h2 style="margin:0; text-transform: uppercase; letter-spacing: 1px;">Кошелек Свиданий</h2>
-        <div id="week-tag" style="color: #666; font-size: 0.9rem; margin-top: 5px; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
+    <div id="last-selection-alert"></div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="margin:0;">КОШЕЛЕК СВИДАНИЙ</h2>
+        <div id="week-tag" style="color: #666; font-size: 0.9rem; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
     </div>
     
     <div id="main-stats" class="stats-card">
         <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
         <div style="display:flex; justify-content:space-between; align-items: flex-end;">
-            <span id="label-me" style="color:#888; font-weight: bold;">ВЫ</span>
+            <span style="color:#888;">ВЫ</span>
             <span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span>
         </div>
         <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
         
-        <div style="display:flex; justify-content:space-between; align-items: flex-end; margin-top:25px;">
-            <span id="label-p" style="color:#888; font-weight: bold;">ОЛЯ</span>
-            <span id="v-p" class="gold-num" style="background: none; -webkit-text-fill-color: #ff007a; color: #ff007a; text-shadow: 0 0 15px rgba(255, 0, 122, 0.3);">0 <div class="coin-icon"></div></span>
+        <div style="display:flex; justify-content:space-between; align-items: flex-end; margin-top:20px;">
+            <span id="label-p" style="color:#888;">ПАРТНЕР</span>
+            <span id="v-p" class="gold-num" style="background:none;-webkit-text-fill-color:#ff007a;color:#ff007a;">0 <div class="coin-icon"></div></span>
         </div>
         <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
 
-    <button id="shop-trigger-btn" disabled>ВЫБРАТЬ СВИДАНИЕ 🥂</button>
+    <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">ВЫБРАТЬ СВИДАНИЕ 🥂</button>
+    
     <div id="tasks"></div>
 
     <div class="footer-controls">
-        <button id="admin-reset" class="btn-secondary" style="display:none;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
-        <button class="btn-secondary" onclick="app.logout()">ВЫЙТИ ИЗ АККАУНТА</button>
+        <button id="admin-reset" class="btn-secondary" style="display:none; color:red;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
+        <button class="btn-secondary" onclick="app.logout()">ВЫЙТИ</button>
     </div>
+</div>
+
+<div id="date-modal">
+    <h2 style="color:#FFD700; text-align:center;">ВЫБЕРИ СВИДАНИЕ</h2>
+    <div id="date-list"></div>
+    <button onclick="document.getElementById('date-modal').style.display='none'" style="width:100%; background:none; border:1px solid #444; color:#666; padding:15px; border-radius:15px; margin-top:20px;">ЗАКРЫТЬ</button>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const coinHTML = () => '<div class="coin-icon"></div>';
 
     const app = {
         user: null, profile: null,
-        tasks: [
-            {n:'Посуда', x:30}, {n:'Стирка', x:40}, {n:'Уборка', x:100},
-            {n:'Сушилка', x:20}, {n:'Завтрак', x:60}, {n:'Вынести мусор', x:40}
-        ],
+        tasks: [{n:'Посуда', x:30}, {n:'Стирка', x:40}, {n:'Уборка', x:100}, {n:'Завтрак', x:60}, {n:'Мусор', x:40}],
+        dateIdeas: ["🍿 Кино", "🍝 Ресторан", "🍷 Вино и Домино", "🛀 СПА дома", "🍦 Прогулка"],
         
         async init() {
             const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
@@ -121,7 +123,7 @@
         },
 
         askLogin() {
-            document.getElementById('loading-screen').innerHTML = `<div style="background:#1e1e1e; padding:30px; border-radius:25px; width:100%; box-sizing:border-box;"><h3>Вход</h3><input type="text" id="n_in" placeholder="Ваш ник" style="width:100%; padding:18px; margin:10px 0; background:#2a2a2a; border:1px solid #444; color:white; border-radius:15px; box-sizing:border-box;"><input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:18px; margin:10px 0; background:#2a2a2a; border:1px solid #444; color:white; border-radius:15px; box-sizing:border-box;"><button onclick="app.saveLogin()" style="width:100%; background:#00d4ff; padding:18px; border:none; border-radius:15px; font-weight:bold; color:#121212; margin-top:10px;">ВОЙТИ</button></div>`;
+            document.getElementById('loading-screen').innerHTML = `<input type="text" id="n_in" placeholder="Ник" style="width:100%; padding:15px; margin:5px 0;"><input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:15px; margin:5px 0;"><button onclick="app.saveLogin()" style="width:100%; padding:15px; background:#00d4ff;">ВОЙТИ</button>`;
         },
 
         saveLogin() {
@@ -135,15 +137,16 @@
             if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
-            this.renderTasks(); this.refresh(true);
-            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},(p)=>this.refresh(p.new.id !== this.user.id)).subscribe();
+            this.renderTasks(); 
+            this.refresh();
+            sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
 
         renderTasks() {
             document.getElementById('tasks').innerHTML = this.tasks.map(t => `
                 <div class="task-card">
-                    <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem; text-shadow:none;">+${t.x} ${coinHTML()}</span></div>
-                    <div class="controls">
+                    <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
+                    <div style="display:flex; gap:10px;">
                         <button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button>
                         <button class="btn-action plus" onclick="app.doTask(${t.x})">+</button>
                     </div>
@@ -151,29 +154,19 @@
         },
 
         async doTask(val) {
-            const score = document.getElementById('v-my');
-            const card = document.getElementById('main-stats');
-            score.classList.add('pulse'); card.classList.add('flash-gold');
-            setTimeout(() => { score.classList.remove('pulse'); card.classList.remove('flash-gold'); }, 400);
-
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
             await sb.from('profiles').update({ xp: newXp }).eq('id', this.user.id);
-            this.profile.xp = newXp;
-            this.updateUI(this.profile, this.lastPartnerData);
         },
 
-        lastPartnerData: null,
-
-        async refresh(forceReload = false) {
+        async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
-            if(!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            this.lastPartnerData = p;
-
-            if (p && p.current_week === 1 && p.xp === 0 && me.current_week !== 1 && forceReload) {
-                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', me.id);
-                location.reload(); return;
+            
+            // Если партнер уже обнулил очки и перешел на новую неделю, делаем то же самое у себя
+            if (p && p.current_week > me.current_week) {
+                await sb.from('profiles').update({ xp: 0, current_week: p.current_week, used_dates: p.used_dates }).eq('id', me.id);
+                location.reload();
             }
 
             this.updateUI(me, p);
@@ -181,38 +174,78 @@
         },
 
         updateUI(me, p) {
-            document.getElementById('v-my').innerHTML = `${me.xp} ${coinHTML()}`;
+            document.getElementById('v-my').innerText = me.xp;
             document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
+            
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
-                document.getElementById('v-p').innerHTML = `${p.xp} ${coinHTML()}`;
+                document.getElementById('v-p').innerText = p.xp;
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
             }
+
+            // Показываем уведомление о выборе, если оно есть в базе
+            const alertBox = document.getElementById('last-selection-alert');
+            if (me.used_dates) {
+                alertBox.innerText = me.used_dates;
+                alertBox.style.display = 'block';
+            } else {
+                alertBox.style.display = 'none';
+            }
+
             const week = me.current_week || 1;
-            const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
+            const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
         },
 
         updateShopButton(me, team) {
             const now = new Date(), day = now.getDay(), hrs = now.getHours();
-            const isFridayTime = (day === 5 && hrs >= 18) || day === 6 || day === 0;
+            const isWeekend = (day === 5 && hrs >= 18) || day === 6 || day === 0;
             const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
             const shopBtn = document.getElementById('shop-trigger-btn');
-            shopBtn.innerText = "ВЫБРАТЬ СВИДАНИЕ 🥂";
-            if (isFridayTime && me.id === leader.id && me.xp >= 150) {
+            
+            if (isWeekend && me.id === leader.id && me.xp >= 150) {
                 shopBtn.disabled = false; shopBtn.classList.add('active');
             } else {
                 shopBtn.disabled = true; shopBtn.classList.remove('active');
             }
         },
 
-        async manualReset() {
-            if (!confirm("Обнулить сезон?")) return;
-            await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('id', this.user.id);
-            location.reload();
+        openDateSelection() {
+            document.getElementById('date-modal').style.display = 'block';
+            document.getElementById('date-list').innerHTML = this.dateIdeas.map(idea => `
+                <div class="date-option" onclick="app.selectDate('${idea}')">${idea}</div>
+            `).join('');
         },
 
+        async selectDate(idea) {
+            const leaderName = this.profile.nickname.toUpperCase();
+            if(!confirm(`${leaderName}, выбираем "${idea}"? Это обнулит очки на новую неделю.`)) return;
+            
+            const nextWeek = (this.profile.current_week || 1) + 1;
+            const statusText = `🎉 ${leaderName} ВЫБРАЛА: ${idea}`;
+
+            // Сброс XP и запись выбора для ВСЕЙ ПАРЫ
+            const { error } = await sb.from('profiles')
+                .update({ 
+                    xp: 0, 
+                    current_week: nextWeek, 
+                    used_dates: statusText 
+                })
+                .eq('pair_code', this.profile.pair_code);
+
+            if(!error) {
+                alert("Готово! Очки обнулены, партнер увидит твой выбор.");
+                location.reload();
+            }
+        },
+
+        async manualReset() {
+            if (confirm("Полный сброс сезона для всех?")) {
+                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('pair_code', this.profile.pair_code);
+                location.reload();
+            }
+        },
         logout() { localStorage.clear(); location.reload(); }
     };
     app.init();
