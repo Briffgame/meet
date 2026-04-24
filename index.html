@@ -3,72 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кошелек Свиданий: Анимация</title>
+    <title>Кошелек Свиданий</title>
+    
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Кошелек">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
         .container { width: 100%; max-width: 400px; }
         .pair-id-tag { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
-        
+
         .gold-num { 
             background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
             font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; 
-            transition: all 0.3s ease;
         }
         
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
 
-        /* ГЛАВНАЯ КАРТОЧКА С АНИМАЦИЕЙ */
-        .stats-card { 
-            background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; 
-            border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; 
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s;
-        }
-        
-        /* ЭФФЕКТ ВСПЫШКИ ПРИ ОБНОВЛЕНИИ */
-        .stats-card.update-flash {
-            animation: cardPulse 0.5s ease-out;
-            border-color: #FFD700;
-        }
-
-        @keyframes cardPulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
-            50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
-            100% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
-        }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; }
+        .stats-card.update-flash { animation: cardPulse 0.5s ease-out; border-color: #FFD700; }
+        @keyframes cardPulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         
         .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
         .progress-fill { height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
         .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
-        
-        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: 0.1s; display: flex; align-items: center; justify-content: center; }
-        .btn-action:active { transform: scale(0.8); filter: brightness(1.2); }
+        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
 
-        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1.1rem; transition: 0.3s; }
-        #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 20px rgba(255,215,0,0.4); cursor: pointer; }
+        #shop-trigger-btn { width: 100%; background: #222; color: #444; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #333; font-size: 1.1rem; transition: all 0.4s ease; opacity: 0.6; }
+        #shop-trigger-btn.active { background: linear-gradient(135deg, #FFD700, #FFA500); color: #121212; border: none; opacity: 1; box-shadow: 0 10px 25px rgba(255,215,0,0.3); cursor: pointer; }
         
         #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px); }
         .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        
+        /* СТИЛЬ ДЛЯ ТЕКСТА ВЫБРАННОГО СВИДАНИЯ */
+        .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка кошелька...</div>
+<div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
 
 <div class="container" id="game-screen" style="display:none;">
     <div style="text-align: center; margin-bottom: 20px;">
         <div id="pair-display" class="pair-id-tag">ID СОЮЗА: ....</div>
         <h2 style="margin:0;">КОШЕЛЕК СВИДАНИЙ</h2>
         <div id="week-tag" style="color: #666; font-size: 0.9rem; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
+        <div id="date-status" class="selected-date-status"></div>
     </div>
     
     <div id="main-card" class="stats-card">
@@ -157,10 +151,9 @@
         },
 
         async doTask(val) {
-            // Эффект нажатия
             const card = document.getElementById('main-card');
             card.classList.remove('update-flash');
-            void card.offsetWidth; // Магия для перезапуска анимации
+            void card.offsetWidth; 
             card.classList.add('update-flash');
 
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
@@ -178,12 +171,12 @@
         },
 
         updateUI(me, p) {
-            this.animateValue("v-my", parseInt(document.getElementById('v-my').innerText), me.xp, 500);
+            this.animateValue("v-my", parseInt(document.getElementById('v-my').innerText), me.xp, 400);
             document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
             
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
-                this.animateValue("v-p", parseInt(document.getElementById('v-p').innerText), p.xp, 500);
+                this.animateValue("v-p", parseInt(document.getElementById('v-p').innerText), p.xp, 400);
                 document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
             }
 
@@ -192,30 +185,46 @@
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
 
-            const now = new Date(), day = now.getDay(), hrs = now.getHours();
+            // ИЗМЕНЕНИЕ: ТЕКСТ ВЫБРАННОГО СВИДАНИЯ
+            const history = me.used_dates || "";
+            const statusDiv = document.getElementById('date-status');
+            if (history.includes("|")) {
+                const lastDate = history.split("|").pop().trim();
+                statusDiv.innerText = `Свидание недели: ${lastDate}`;
+            } else {
+                statusDiv.innerText = "";
+            }
+
+            // ЛОГИКА КНОПКИ
+            const now = new Date();
+            const day = now.getDay(); 
+            const hrs = now.getHours();
             const isWeekend = (day === 5 && hrs >= 18) || day === 6 || day === 0;
+            
+            // ИЗМЕНЕНИЕ: Кнопка активна только если баллы > 0 И ты лидер И выходные
+            const isLeader = p ? (me.xp > p.xp) : (me.xp > 0);
             const shopBtn = document.getElementById('shop-trigger-btn');
             
-            if (isWeekend && me.xp > (p ? p.xp : 0)) {
-                shopBtn.disabled = false; shopBtn.classList.add('active');
+            if (isWeekend && isLeader && me.xp > 0) {
+                shopBtn.disabled = false;
+                shopBtn.classList.add('active');
             } else {
-                shopBtn.disabled = true; shopBtn.classList.remove('active');
+                shopBtn.disabled = true;
+                shopBtn.classList.remove('active');
             }
         },
 
-        // Функция для плавной "прокрутки" цифр
         animateValue(id, start, end, duration) {
             if (start === end) return;
             const obj = document.getElementById(id);
             const range = end - start;
             let current = start;
-            const increment = end > start ? 1 : -1;
-            const stepTime = Math.abs(Math.floor(duration / range));
+            const stepTime = Math.abs(Math.floor(duration / range)) || 10;
             const timer = setInterval(() => {
-                current += increment;
+                current += (end > start ? 1 : -1);
                 obj.innerHTML = current + ' <div class="coin-icon"></div>';
                 if (current == end) clearInterval(timer);
-            }, stepTime || 10);
+            }, Math.min(stepTime, 50));
         },
 
         openDateSelection() {
@@ -231,16 +240,18 @@
         },
 
         async selectDate(name, price) {
-            if (this.profile.xp < price) { alert(`Маловато баллов! Нужно ${price}`); return; }
-            if(!confirm(`Берем "${name}" за ${price}?`)) return;
+            if (this.profile.xp < price) { alert(`Баллов пока недостаточно!`); return; }
+            if(!confirm(`Выбираем "${name}"? Баллы обнулятся, начнется новая неделя.`)) return;
             const nextWeek = (this.profile.current_week || 1) + 1;
             const newHistory = (this.profile.used_dates || "") + " | " + name;
+            
+            // ИЗМЕНЕНИЕ: Обновляем базу и локальный объект для мгновенного засыпания кнопки
             await sb.from('profiles').update({ xp: 0, current_week: nextWeek, used_dates: newHistory }).eq('pair_code', this.profile.pair_code);
             location.reload();
         },
 
         async manualReset() {
-            if (confirm("Сбросить всё?")) {
+            if (confirm("Сбросить весь прогресс сезона?")) {
                 await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('pair_code', this.profile.pair_code);
                 location.reload();
             }
