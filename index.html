@@ -14,8 +14,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
-        
-        /* Фикс для работы :active на iOS */
         * { -webkit-tap-highlight-color: transparent; }
 
         .container { width: 100%; max-width: 400px; }
@@ -30,9 +28,7 @@
             will-change: transform;
         }
         
-        /* Анимация увеличения цифр */
         .bump { transform: scale(1.3) !important; filter: brightness(1.3); }
-
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
         
         .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; transition: border-color 0.3s; }
@@ -46,17 +42,12 @@
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
         
-        /* КНОПКИ С ОТКЛИКОМ */
         .btn-action { 
             width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; 
             cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: transform 0.1s ease-out;
-            user-select: none;
-            -webkit-user-select: none;
+            transition: transform 0.1s ease-out; user-select: none; -webkit-user-select: none;
         }
-
-        /* Эффект нажатия работает везде */
-        .btn-action:active { transform: scale(0.8); }
+        .btn-action:active { transform: scale(0.85); }
         
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
@@ -71,7 +62,7 @@
 </head>
 <body ontouchstart="">
 
-<div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
+<div id="loading-screen" style="margin-top:100px; display: flex; justify-content: center; width: 100%;">🪙 Синхронизация...</div>
 
 <div class="container" id="game-screen" style="display:none;">
     <div style="text-align: center; margin-bottom: 20px;">
@@ -98,6 +89,10 @@
 
     <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
     <div id="tasks"></div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <button style="background:none; border:1px solid #333; color:#444; padding:10px 20px; border-radius:12px; font-size:0.8rem;" onclick="app.logout()">Выйти</button>
+    </div>
 </div>
 
 <div id="date-modal">
@@ -123,7 +118,22 @@
             if (data?.user) { this.user = data.user; await this.start(); } else { this.logout(); }
         },
 
-        askLogin() { document.getElementById('loading-screen').innerHTML = `<input type="text" id="n_in" placeholder="Ник" style="width:100%; padding:15px; margin:5px 0;"><input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:15px; margin:5px 0;"><button onclick="app.saveLogin()" style="width:100%; padding:15px; background:#00d4ff;">ВОЙТИ</button>`; },
+        askLogin() {
+            document.getElementById('loading-screen').innerHTML = `
+                <div style="width: 100%; max-width: 300px; text-align: center;">
+                    <h2 style="margin-bottom: 20px; color: #FFD700;">ВХОД</h2>
+                    <input type="text" id="n_in" placeholder="Ваш ник" 
+                        style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
+                    <input type="password" id="p_in" placeholder="Пароль" 
+                        style="width:100%; padding:18px; margin-bottom:20px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
+                    <button onclick="app.saveLogin()" 
+                        style="width:100%; padding:18px; background:linear-gradient(135deg, #00d4ff, #008fb3); border:none; color:#121212; font-weight:bold; border-radius:18px; font-size:1rem; cursor:pointer;">
+                        ВОЙТИ В СОЮЗ
+                    </button>
+                </div>
+            `;
+        },
+
         saveLogin() { const n = document.getElementById('n_in').value.trim(), p = document.getElementById('p_in').value; if(n && p) { localStorage.setItem('briff_nick', n); localStorage.setItem('briff_pass', p); location.reload(); } },
 
         async start() {
@@ -139,19 +149,17 @@
         renderTasks() { document.getElementById('tasks').innerHTML = this.tasks.map(t => `<div class="task-card"><div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div><div style="display:flex; gap:10px;"><button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button><button class="btn-action plus" onclick="app.doTask(${t.x})">+</button></div></div>`).join(''); },
 
         async doTask(val) {
-            // Анимация цифр и карточки
             const myXpEl = document.getElementById('v-my');
             const card = document.getElementById('main-card');
             
             myXpEl.classList.remove('bump');
             card.classList.remove('update-flash');
-            void myXpEl.offsetWidth; // Магия для перезапуска CSS-анимации
+            void myXpEl.offsetWidth; 
             
             myXpEl.classList.add('bump');
             card.classList.add('update-flash');
             
-            setTimeout(() => myXpEl.classList.remove('bump'), 200);
-            setTimeout(() => card.classList.remove('update-flash'), 400);
+            setTimeout(() => { myXpEl.classList.remove('bump'); card.classList.remove('update-flash'); }, 300);
 
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
@@ -180,7 +188,6 @@
             document.getElementById('date-status').innerText = history.includes("|") ? `Свидание недели: ${history.split("|").pop().trim()}` : "";
 
             const now = new Date();
-            // Пятница после 18:00
             const isFridayEvening = (now.getDay() === 5 && now.getHours() >= 18);
             const isLeader = p ? (me.xp > p.xp) : (me.xp > 0);
             const shopBtn = document.getElementById('shop-trigger-btn');
@@ -204,6 +211,7 @@
             if(!confirm(`Выбираем "${name}"?`)) return;
             const nextWeek = (this.profile.current_week || 1) + 1;
             const newHistory = (this.profile.used_dates || "") + " | " + name;
+            
             await sb.from('profiles').update({ xp: 0, current_week: nextWeek, used_dates: newHistory }).eq('pair_code', this.profile.pair_code);
             location.reload();
         },
