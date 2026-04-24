@@ -25,7 +25,6 @@
         
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
 
-        /* Плашка уведомления о выбранном свидании */
         #last-selection-alert { 
             background: rgba(255, 215, 0, 0.1); 
             border: 1px dashed #FFD700; 
@@ -48,7 +47,8 @@
         .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
-        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; }
+        .btn-action:active { transform: scale(0.9); }
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
 
@@ -157,13 +157,16 @@
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
             await sb.from('profiles').update({ xp: newXp }).eq('id', this.user.id);
+            // Принудительно обновляем локальный профиль для UI
+            this.profile.xp = newXp;
+            this.refresh();
         },
 
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            if (!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
             
-            // Если партнер уже обнулил очки и перешел на новую неделю, делаем то же самое у себя
             if (p && p.current_week > me.current_week) {
                 await sb.from('profiles').update({ xp: 0, current_week: p.current_week, used_dates: p.used_dates }).eq('id', me.id);
                 location.reload();
@@ -183,7 +186,6 @@
                 document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
             }
 
-            // Показываем уведомление о выборе, если оно есть в базе
             const alertBox = document.getElementById('last-selection-alert');
             if (me.used_dates) {
                 alertBox.innerText = me.used_dates;
@@ -225,7 +227,6 @@
             const nextWeek = (this.profile.current_week || 1) + 1;
             const statusText = `🎉 ${leaderName} ВЫБРАЛА: ${idea}`;
 
-            // Сброс XP и запись выбора для ВСЕЙ ПАРЫ
             const { error } = await sb.from('profiles')
                 .update({ 
                     xp: 0, 
@@ -235,7 +236,7 @@
                 .eq('pair_code', this.profile.pair_code);
 
             if(!error) {
-                alert("Готово! Очки обнулены, партнер увидит твой выбор.");
+                alert("Готово! Очки обнулены.");
                 location.reload();
             }
         },
