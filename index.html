@@ -3,78 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кошелек Свиданий</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="icon" type="image/png" href="logo.png">
-
+    <title>Кошелек Свиданий: Рандом</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
         .container { width: 100%; max-width: 400px; }
-        
-        .gold-num { 
-            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px;
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-        }
-        
+        .pair-id-tag { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
+        .gold-num { background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
-
-        #last-selection-alert { 
-            background: rgba(255, 215, 0, 0.1); 
-            border: 1px dashed #FFD700; 
-            color: #FFD700; 
-            padding: 15px; 
-            border-radius: 15px; 
-            margin-bottom: 20px; 
-            text-align: center; 
-            font-size: 0.9rem; 
-            display: none; 
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; }
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
-        .progress-fill { height: 100%; width: 0%; transition: 0.8s ease; }
+        .progress-fill { height: 100%; width: 0%; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
         .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
         .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
-
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
-        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; }
-        .btn-action:active { transform: scale(0.9); }
+        .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: 0.1s; }
+        .btn-action:active { transform: scale(0.85); }
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
-
-        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1.1rem; }
+        #shop-trigger-btn { width: 100%; background: #333; color: #666; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #444; font-size: 1.1rem; transition: 0.3s; }
         #shop-trigger-btn.active { background: #FFD700; color: #121212; border: none; box-shadow: 0 4px 20px rgba(255,215,0,0.4); cursor: pointer; }
-
-        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; text-align: center; font-weight: bold; cursor: pointer; }
-
-        .footer-controls { width: 100%; margin-top: 30px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .btn-secondary { background: none; border: 1px solid #444; color: #444; padding: 12px 20px; border-radius: 15px; font-size: 0.8rem; width: 100%; max-width: 200px; }
+        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); }
+        .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
+<div id="loading-screen" style="margin-top:100px;">🪙 Загрузка кошелька...</div>
 
 <div class="container" id="game-screen" style="display:none;">
-    <div id="last-selection-alert"></div>
-
     <div style="text-align: center; margin-bottom: 20px;">
+        <div id="pair-display" class="pair-id-tag">ID СОЮЗА: ....</div>
         <h2 style="margin:0;">КОШЕЛЕК СВИДАНИЙ</h2>
         <div id="week-tag" style="color: #666; font-size: 0.9rem; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
     </div>
     
-    <div id="main-stats" class="stats-card">
+    <div class="stats-card">
         <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
         <div style="display:flex; justify-content:space-between; align-items: flex-end;">
             <span style="color:#888;">ВЫ</span>
@@ -89,18 +54,18 @@
         <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
 
-    <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">ВЫБРАТЬ СВИДАНИЕ 🥂</button>
-    
+    <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
     <div id="tasks"></div>
 
-    <div class="footer-controls">
-        <button id="admin-reset" class="btn-secondary" style="display:none; color:red;" onclick="app.manualReset()">ОБНУЛИТЬ СЕЗОН</button>
-        <button class="btn-secondary" onclick="app.logout()">ВЫЙТИ</button>
+    <div style="margin-top:30px; display:flex; flex-direction:column; gap:10px; align-items:center;">
+        <button id="admin-reset" style="display:none; color:red; background:none; border:none; font-size: 0.7rem;" onclick="app.manualReset()">Сбросить сезон и историю</button>
+        <button style="background:none; border:1px solid #444; color:#444; padding:10px; border-radius:10px; font-size: 0.7rem;" onclick="app.logout()">Выйти из системы</button>
     </div>
 </div>
 
 <div id="date-modal">
-    <h2 style="color:#FFD700; text-align:center;">ВЫБЕРИ СВИДАНИЕ</h2>
+    <h2 style="color:#FFD700; text-align:center;">УДАЧА НЕДЕЛИ</h2>
+    <p style="text-align:center; color:#888; font-size:0.8rem; margin-bottom:20px;">Выбери одно, на которое хватает баллов</p>
     <div id="date-list"></div>
     <button onclick="document.getElementById('date-modal').style.display='none'" style="width:100%; background:none; border:1px solid #444; color:#666; padding:15px; border-radius:15px; margin-top:20px;">ЗАКРЫТЬ</button>
 </div>
@@ -113,8 +78,16 @@
     const app = {
         user: null, profile: null,
         tasks: [{n:'Посуда', x:30}, {n:'Стирка', x:40}, {n:'Уборка', x:100}, {n:'Завтрак', x:60}, {n:'Мусор', x:40}],
-        dateIdeas: ["🍿 Кино", "🍝 Ресторан", "🍷 Вино и Домино", "🛀 СПА дома", "🍦 Прогулка"],
         
+        // ПОЛНЫЙ ПЕРЕМЕШАННЫЙ СПИСОК С ЦЕНАМИ
+        allDates: [
+            {n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250},
+            {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500},
+            {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400},
+            {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Мини-трип", p:2000}, {n:"⛺ Пикник", p:800},
+            {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}
+        ],
+
         async init() {
             const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
             if (!n || !p) return this.askLogin();
@@ -135,6 +108,7 @@
             const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
             this.profile = pr;
             if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
+            document.getElementById('pair-display').innerText = `ID СОЮЗА: ${pr.pair_code}`;
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             this.renderTasks(); 
@@ -157,7 +131,6 @@
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
             await sb.from('profiles').update({ xp: newXp }).eq('id', this.user.id);
-            // Принудительно обновляем локальный профиль для UI
             this.profile.xp = newXp;
             this.refresh();
         },
@@ -166,47 +139,33 @@
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if (!team) return;
             const me = team.find(x => x.id === this.user.id), p = team.find(x => x.id !== this.user.id);
-            
             if (p && p.current_week > me.current_week) {
                 await sb.from('profiles').update({ xp: 0, current_week: p.current_week, used_dates: p.used_dates }).eq('id', me.id);
                 location.reload();
             }
-
             this.updateUI(me, p);
-            this.updateShopButton(me, team);
         },
 
         updateUI(me, p) {
             document.getElementById('v-my').innerText = me.xp;
-            document.getElementById('f-my').style.width = Math.min((me.xp/800)*100, 100) + '%';
-            
+            // Максимум шкалы теперь фиксированный (например 2000), чтобы видеть прогресс к самым дорогим целям
+            document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
                 document.getElementById('v-p').innerText = p.xp;
-                document.getElementById('f-p').style.width = Math.min((p.xp/800)*100, 100) + '%';
+                document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
             }
-
-            const alertBox = document.getElementById('last-selection-alert');
-            if (me.used_dates) {
-                alertBox.innerText = me.used_dates;
-                alertBox.style.display = 'block';
-            } else {
-                alertBox.style.display = 'none';
-            }
-
             const week = me.current_week || 1;
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
             const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
             document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
-        },
 
-        updateShopButton(me, team) {
             const now = new Date(), day = now.getDay(), hrs = now.getHours();
             const isWeekend = (day === 5 && hrs >= 18) || day === 6 || day === 0;
-            const leader = team.reduce((prev, curr) => (prev.xp > curr.xp) ? prev : curr);
             const shopBtn = document.getElementById('shop-trigger-btn');
             
-            if (isWeekend && me.id === leader.id && me.xp >= 150) {
+            // Кнопка активна, если ты лидер и сейчас выходные
+            if (isWeekend && me.xp > (p ? p.xp : 0)) {
                 shopBtn.disabled = false; shopBtn.classList.add('active');
             } else {
                 shopBtn.disabled = true; shopBtn.classList.remove('active');
@@ -214,35 +173,44 @@
         },
 
         openDateSelection() {
+            const history = this.profile.used_dates || "";
+            // Фильтруем те, что уже БЫЛИ выбраны когда-либо
+            const available = this.allDates.filter(d => !history.includes(d.n));
+            
+            // Выбираем 3 случайных из всего оставшегося списка
+            const shuffled = available.sort(() => 0.5 - Math.random()).slice(0, 3);
+
             document.getElementById('date-modal').style.display = 'block';
-            document.getElementById('date-list').innerHTML = this.dateIdeas.map(idea => `
-                <div class="date-option" onclick="app.selectDate('${idea}')">${idea}</div>
+            document.getElementById('date-list').innerHTML = shuffled.map(d => `
+                <div class="date-option" onclick="app.selectDate('${d.n}', ${d.p})">
+                    <span>${d.n}</span>
+                    <span class="gold-num" style="font-size:1rem;">${d.p} <div class="coin-icon"></div></span>
+                </div>
             `).join('');
         },
 
-        async selectDate(idea) {
-            const leaderName = this.profile.nickname.toUpperCase();
-            if(!confirm(`${leaderName}, выбираем "${idea}"? Это обнулит очки на новую неделю.`)) return;
-            
-            const nextWeek = (this.profile.current_week || 1) + 1;
-            const statusText = `🎉 ${leaderName} ВЫБРАЛА: ${idea}`;
-
-            const { error } = await sb.from('profiles')
-                .update({ 
-                    xp: 0, 
-                    current_week: nextWeek, 
-                    used_dates: statusText 
-                })
-                .eq('pair_code', this.profile.pair_code);
-
-            if(!error) {
-                alert("Готово! Очки обнулены.");
-                location.reload();
+        async selectDate(name, price) {
+            if (this.profile.xp < price) {
+                alert(`Твоих баллов (${this.profile.xp}) не хватает на "${name}". Нужно минимум ${price}!`);
+                return;
             }
+
+            if(!confirm(`Тратишь ${price} баллов на "${name}"? Это завершит неделю!`)) return;
+
+            const nextWeek = (this.profile.current_week || 1) + 1;
+            const newHistory = (this.profile.used_dates || "") + " | " + name;
+
+            const { error } = await sb.from('profiles').update({ 
+                xp: 0, 
+                current_week: nextWeek, 
+                used_dates: newHistory 
+            }).eq('pair_code', this.profile.pair_code);
+
+            if(!error) { alert("Свидание подтверждено! Очки обнулены, начинается новая неделя."); location.reload(); }
         },
 
         async manualReset() {
-            if (confirm("Полный сброс сезона для всех?")) {
+            if (confirm("Это сбросит ВСЮ историю свиданий и вернет 1 неделю. Уверен?")) {
                 await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('pair_code', this.profile.pair_code);
                 location.reload();
             }
