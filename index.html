@@ -14,25 +14,29 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
+        
+        /* Фикс для работы :active на iOS */
+        * { -webkit-tap-highlight-color: transparent; }
+
         .container { width: 100%; max-width: 400px; }
         .pair-id-tag { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
         
-        /* АНИМАЦИЯ ЦИФР */
         .gold-num { 
             background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
             font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; 
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            will-change: transform;
         }
         
-        /* Класс для пульсации цифр */
-        .bump { transform: scale(1.4); filter: brightness(1.5); }
+        /* Анимация увеличения цифр */
+        .bump { transform: scale(1.3) !important; filter: brightness(1.3); }
 
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
         
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; transition: 0.3s; }
-        .stats-card.update-flash { border-color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; transition: border-color 0.3s; }
+        .stats-card.update-flash { border-color: #FFD700; }
 
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
@@ -42,13 +46,17 @@
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
         
-        /* АНИМАЦИЯ НАЖАТИЯ КНОПОК */
+        /* КНОПКИ С ОТКЛИКОМ */
         .btn-action { 
             width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; 
             cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: transform 0.1s active, background 0.2s;
+            transition: transform 0.1s ease-out;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        .btn-action:active { transform: scale(0.85); filter: brightness(1.2); }
+
+        /* Эффект нажатия работает везде */
+        .btn-action:active { transform: scale(0.8); }
         
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
@@ -61,7 +69,7 @@
         .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
-<body>
+<body ontouchstart="">
 
 <div id="loading-screen" style="margin-top:100px;">🪙 Синхронизация...</div>
 
@@ -131,21 +139,24 @@
         renderTasks() { document.getElementById('tasks').innerHTML = this.tasks.map(t => `<div class="task-card"><div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div><div style="display:flex; gap:10px;"><button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button><button class="btn-action plus" onclick="app.doTask(${t.x})">+</button></div></div>`).join(''); },
 
         async doTask(val) {
-            // Визуальный отклик на цифры
+            // Анимация цифр и карточки
             const myXpEl = document.getElementById('v-my');
-            myXpEl.classList.add('bump');
-            document.getElementById('main-card').classList.add('update-flash');
+            const card = document.getElementById('main-card');
             
-            setTimeout(() => {
-                myXpEl.classList.remove('bump');
-                document.getElementById('main-card').classList.remove('update-flash');
-            }, 300);
+            myXpEl.classList.remove('bump');
+            card.classList.remove('update-flash');
+            void myXpEl.offsetWidth; // Магия для перезапуска CSS-анимации
+            
+            myXpEl.classList.add('bump');
+            card.classList.add('update-flash');
+            
+            setTimeout(() => myXpEl.classList.remove('bump'), 200);
+            setTimeout(() => card.classList.remove('update-flash'), 400);
 
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
             await sb.from('profiles').update({ xp: newXp }).eq('id', this.user.id);
-            this.profile.xp = newXp; 
-            this.refresh();
+            this.profile.xp = newXp; this.refresh();
         },
 
         async refresh() {
@@ -156,10 +167,8 @@
         },
 
         updateUI(me, p) {
-            // Обновляем текст без плавного счетчика (для резкого увеличения размера)
             document.getElementById('v-my').innerHTML = `${me.xp} <div class="coin-icon"></div>`;
             document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
-            
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
                 document.getElementById('v-p').innerHTML = `${p.xp} <div class="coin-icon"></div>`;
@@ -171,6 +180,7 @@
             document.getElementById('date-status').innerText = history.includes("|") ? `Свидание недели: ${history.split("|").pop().trim()}` : "";
 
             const now = new Date();
+            // Пятница после 18:00
             const isFridayEvening = (now.getDay() === 5 && now.getHours() >= 18);
             const isLeader = p ? (me.xp > p.xp) : (me.xp > 0);
             const shopBtn = document.getElementById('shop-trigger-btn');
