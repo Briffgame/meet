@@ -10,46 +10,28 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Кошелек">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
         .container { width: 100%; max-width: 400px; }
         .pair-id-tag { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
-
-        .gold-num { 
-            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; 
-        }
-        
+        .gold-num { background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; }
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
-
         .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; }
-        .stats-card.update-flash { animation: cardPulse 0.5s ease-out; border-color: #FFD700; }
-        @keyframes cardPulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        
         .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
         .progress-fill { height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
         .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
         .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
-
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
         .btn-action { width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
-
         #shop-trigger-btn { width: 100%; background: #222; color: #444; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #333; font-size: 1.1rem; transition: all 0.4s ease; opacity: 0.6; }
         #shop-trigger-btn.active { background: linear-gradient(135deg, #FFD700, #FFA500); color: #121212; border: none; opacity: 1; box-shadow: 0 10px 25px rgba(255,215,0,0.3); cursor: pointer; }
-        
         #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px); }
         .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        
-        /* СТИЛЬ ДЛЯ ТЕКСТА ВЫБРАННОГО СВИДАНИЯ */
         .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
@@ -82,11 +64,6 @@
 
     <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
     <div id="tasks"></div>
-
-    <div style="margin-top:30px; display:flex; flex-direction:column; gap:10px; align-items:center;">
-        <button id="admin-reset" style="display:none; color:red; background:none; border:none; font-size: 0.7rem;" onclick="app.manualReset()">Сбросить сезон</button>
-        <button style="background:none; border:1px solid #444; color:#444; padding:10px; border-radius:10px; font-size: 0.7rem;" onclick="app.logout()">Выйти</button>
-    </div>
 </div>
 
 <div id="date-modal">
@@ -103,13 +80,7 @@
     const app = {
         user: null, profile: null,
         tasks: [{n:'Посуда', x:30}, {n:'Стирка', x:40}, {n:'Уборка', x:100}, {n:'Завтрак', x:60}, {n:'Мусор', x:40}],
-        allDates: [
-            {n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250},
-            {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500},
-            {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400},
-            {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Мини-трип", p:2000}, {n:"⛺ Пикник", p:800},
-            {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}
-        ],
+        allDates: [{n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250}, {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500}, {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400}, {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Мини-трип", p:2000}, {n:"⛺ Пикник", p:800}, {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}],
 
         async init() {
             const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
@@ -118,49 +89,26 @@
             if (data?.user) { this.user = data.user; await this.start(); } else { this.logout(); }
         },
 
-        askLogin() {
-            document.getElementById('loading-screen').innerHTML = `<input type="text" id="n_in" placeholder="Ник" style="width:100%; padding:15px; margin:5px 0;"><input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:15px; margin:5px 0;"><button onclick="app.saveLogin()" style="width:100%; padding:15px; background:#00d4ff;">ВОЙТИ</button>`;
-        },
-
-        saveLogin() {
-            const n = document.getElementById('n_in').value.trim(), p = document.getElementById('p_in').value;
-            if(n && p) { localStorage.setItem('briff_nick', n); localStorage.setItem('briff_pass', p); location.reload(); }
-        },
+        askLogin() { document.getElementById('loading-screen').innerHTML = `<input type="text" id="n_in" placeholder="Ник" style="width:100%; padding:15px; margin:5px 0;"><input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:15px; margin:5px 0;"><button onclick="app.saveLogin()" style="width:100%; padding:15px; background:#00d4ff;">ВОЙТИ</button>`; },
+        saveLogin() { const n = document.getElementById('n_in').value.trim(), p = document.getElementById('p_in').value; if(n && p) { localStorage.setItem('briff_nick', n); localStorage.setItem('briff_pass', p); location.reload(); } },
 
         async start() {
             const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
             this.profile = pr;
-            if (pr.nickname.toLowerCase() === 'briff') document.getElementById('admin-reset').style.display = 'block';
             document.getElementById('pair-display').innerText = `ID СОЮЗА: ${pr.pair_code}`;
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
-            this.renderTasks(); 
-            this.refresh();
+            this.renderTasks(); this.refresh();
             sb.channel('db').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>this.refresh()).subscribe();
         },
 
-        renderTasks() {
-            document.getElementById('tasks').innerHTML = this.tasks.map(t => `
-                <div class="task-card">
-                    <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button>
-                        <button class="btn-action plus" onclick="app.doTask(${t.x})">+</button>
-                    </div>
-                </div>`).join('');
-        },
+        renderTasks() { document.getElementById('tasks').innerHTML = this.tasks.map(t => `<div class="task-card"><div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div><div style="display:flex; gap:10px;"><button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button><button class="btn-action plus" onclick="app.doTask(${t.x})">+</button></div></div>`).join(''); },
 
         async doTask(val) {
-            const card = document.getElementById('main-card');
-            card.classList.remove('update-flash');
-            void card.offsetWidth; 
-            card.classList.add('update-flash');
-
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user.id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
             await sb.from('profiles').update({ xp: newXp }).eq('id', this.user.id);
-            this.profile.xp = newXp;
-            this.refresh();
+            this.profile.xp = newXp; this.refresh();
         },
 
         async refresh() {
@@ -173,88 +121,59 @@
         updateUI(me, p) {
             this.animateValue("v-my", parseInt(document.getElementById('v-my').innerText), me.xp, 400);
             document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
-            
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
                 this.animateValue("v-p", parseInt(document.getElementById('v-p').innerText), p.xp, 400);
                 document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
             }
-
+            
             const week = me.current_week || 1;
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${week} / 4`;
-            const lvls = ["НОВИЧКИ", "ЛЮБИТЕЛИ", "ПРОФИ", "ЛЕГЕНДЫ"];
-            document.getElementById('lvl-badge').innerText = lvls[week-1] || "ЛЕГЕНДЫ";
-
-            // ИЗМЕНЕНИЕ: ТЕКСТ ВЫБРАННОГО СВИДАНИЯ
             const history = me.used_dates || "";
             const statusDiv = document.getElementById('date-status');
             if (history.includes("|")) {
-                const lastDate = history.split("|").pop().trim();
-                statusDiv.innerText = `Свидание недели: ${lastDate}`;
-            } else {
-                statusDiv.innerText = "";
-            }
+                statusDiv.innerText = `Свидание недели: ${history.split("|").pop().trim()}`;
+            } else { statusDiv.innerText = ""; }
 
-            // ЛОГИКА КНОПКИ
+            // ИСПРАВЛЕННАЯ ЛОГИКА КНОПКИ
             const now = new Date();
-            const day = now.getDay(); 
-            const hrs = now.getHours();
-            const isWeekend = (day === 5 && hrs >= 18) || day === 6 || day === 0;
-            
-            // ИЗМЕНЕНИЕ: Кнопка активна только если баллы > 0 И ты лидер И выходные
+            const isFridayEvening = (now.getDay() === 5 && now.getHours() >= 18); // Только пятница с 18:00
+            const hasXp = me.xp > 0;
             const isLeader = p ? (me.xp > p.xp) : (me.xp > 0);
-            const shopBtn = document.getElementById('shop-trigger-btn');
             
-            if (isWeekend && isLeader && me.xp > 0) {
-                shopBtn.disabled = false;
-                shopBtn.classList.add('active');
+            const shopBtn = document.getElementById('shop-trigger-btn');
+            if (isFridayEvening && isLeader && hasXp) {
+                shopBtn.disabled = false; shopBtn.classList.add('active');
             } else {
-                shopBtn.disabled = true;
-                shopBtn.classList.remove('active');
+                shopBtn.disabled = true; shopBtn.classList.remove('active');
             }
         },
 
         animateValue(id, start, end, duration) {
             if (start === end) return;
             const obj = document.getElementById(id);
-            const range = end - start;
             let current = start;
-            const stepTime = Math.abs(Math.floor(duration / range)) || 10;
             const timer = setInterval(() => {
                 current += (end > start ? 1 : -1);
                 obj.innerHTML = current + ' <div class="coin-icon"></div>';
                 if (current == end) clearInterval(timer);
-            }, Math.min(stepTime, 50));
+            }, 10);
         },
 
         openDateSelection() {
             const history = this.profile.used_dates || "";
-            const available = this.allDates.filter(d => !history.includes(d.n));
-            const shuffled = available.sort(() => 0.5 - Math.random()).slice(0, 3);
+            const shuffled = this.allDates.filter(d => !history.includes(d.n)).sort(() => 0.5 - Math.random()).slice(0, 3);
             document.getElementById('date-modal').style.display = 'block';
-            document.getElementById('date-list').innerHTML = shuffled.map(d => `
-                <div class="date-option" onclick="app.selectDate('${d.n}', ${d.p})">
-                    <span>${d.n}</span>
-                    <span class="gold-num" style="font-size:1rem;">${d.p} <div class="coin-icon"></div></span>
-                </div>`).join('');
+            document.getElementById('date-list').innerHTML = shuffled.map(d => `<div class="date-option" onclick="app.selectDate('${d.n}', ${d.p})"><span>${d.n}</span><span class="gold-num" style="font-size:1rem;">${d.p} <div class="coin-icon"></div></span></div>`).join('');
         },
 
         async selectDate(name, price) {
-            if (this.profile.xp < price) { alert(`Баллов пока недостаточно!`); return; }
-            if(!confirm(`Выбираем "${name}"? Баллы обнулятся, начнется новая неделя.`)) return;
+            if (this.profile.xp < price) { alert(`Недостаточно баллов!`); return; }
+            if(!confirm(`Выбираем "${name}"?`)) return;
             const nextWeek = (this.profile.current_week || 1) + 1;
             const newHistory = (this.profile.used_dates || "") + " | " + name;
-            
-            // ИЗМЕНЕНИЕ: Обновляем базу и локальный объект для мгновенного засыпания кнопки
             await sb.from('profiles').update({ xp: 0, current_week: nextWeek, used_dates: newHistory }).eq('pair_code', this.profile.pair_code);
             location.reload();
-        },
-
-        async manualReset() {
-            if (confirm("Сбросить весь прогресс сезона?")) {
-                await sb.from('profiles').update({ xp: 0, current_week: 1, used_dates: "" }).eq('pair_code', this.profile.pair_code);
-                location.reload();
-            }
         },
         logout() { localStorage.clear(); location.reload(); }
     };
