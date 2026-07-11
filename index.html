@@ -17,7 +17,20 @@
         * { -webkit-tap-highlight-color: transparent; }
 
         .container { width: 100%; max-width: 400px; }
-        .pair-id-tag { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
+        
+        .pair-box { 
+            background: #1e1e1e; 
+            padding: 10px 15px; 
+            border-radius: 14px; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 10px; 
+            border: 1px solid #333;
+            margin-bottom: 15px;
+        }
+        .pair-id-tag { font-size: 0.75rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .copy-btn { background: #333; border: none; color: #FFD700; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
+        .copy-btn:active { background: #444; }
         
         .gold-num { 
             background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
@@ -66,7 +79,10 @@
 
 <div class="container" id="game-screen" style="display:none;">
     <div style="text-align: center; margin-bottom: 20px;">
-        <div id="pair-display" class="pair-id-tag">ID СОЮЗА: ....</div>
+        <div class="pair-box">
+            <div id="pair-display" class="pair-id-tag">КОД СОЮЗА: ......</div>
+            <button class="copy-btn" onclick="app.copyPairCode()">📋 СКОПИРОВАТЬ</button>
+        </div>
         <h2 style="margin:0;">КОШЕЛЕК СВИДАНИЙ</h2>
         <div id="week-tag" style="color: #666; font-size: 0.9rem; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
         <div id="date-status" class="selected-date-status"></div>
@@ -133,7 +149,7 @@
                     <input type="password" id="p_in" placeholder="Пароль" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
                     
-                    <input type="text" id="code_in" placeholder="Код партнера (если есть)" 
+                    <input type="text" id="code_in" placeholder="6-значный код партнера" inputmode="numeric" pattern="[0-9]*" maxlength="6"
                         style="width:100%; padding:18px; margin-bottom:20px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
                     
                     <button id="auth-btn" onclick="app.handleAuth()" 
@@ -176,7 +192,7 @@
             const e = document.getElementById('e_in').value.trim();
             const p = document.getElementById('p_in').value;
             const n = document.getElementById('n_in').value.trim();
-            let providedCode = document.getElementById('code_in').value.trim().toUpperCase();
+            let providedCode = document.getElementById('code_in').value.trim();
 
             if (!e || !p) { alert('Заполните обязательные поля (Email и Пароль)!'); return; }
             if (this.authMode === 'register' && !n) { alert('Пожалуйста, введите ваше Имя/Никнейм для отображения в паре!'); return; }
@@ -195,8 +211,9 @@
                 if (error) { alert('Ошибка регистрации: ' + error.message); this.askLogin(); return; }
 
                 if (data?.user) {
+                    // Если код не передан, генерируем строго 6 цифр
                     if (!providedCode) {
-                        providedCode = 'PAIR-' + Math.floor(1000 + Math.random() * 9000);
+                        providedCode = String(Math.floor(100000 + Math.random() * 900000));
                     }
 
                     const { error: profError } = await sb.from('profiles').insert([
@@ -216,7 +233,7 @@
                         return;
                     }
 
-                    alert(`Пара создана! Ваш код союза: ${providedCode}. Дайте его партнеру при регистрации.`);
+                    alert(`Пара успешно создана!\n\nВаш ЦИФРОВОЙ КОД СОЮЗА: ${providedCode}\n\nПередайте эти 6 цифр партнеру для регистрации.`);
                     localStorage.setItem('briff_email', e);
                     localStorage.setItem('briff_pass', p);
                     location.reload();
@@ -227,7 +244,7 @@
         async start() {
             const { data: pr } = await sb.from('profiles').select('*').eq('id', this.user.id).single();
             this.profile = pr;
-            document.getElementById('pair-display').innerText = `ID СОЮЗА: ${pr.pair_code}`;
+            document.getElementById('pair-display').innerText = `КОД СОЮЗА: ${pr.pair_code}`;
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             this.renderTasks(); this.refresh();
@@ -267,8 +284,14 @@
             document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
+                document.getElementById('label-p').style.color = '#888';
                 document.getElementById('v-p').innerHTML = `${p.xp} <div class="coin-icon"></div>`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
+            } else {
+                document.getElementById('label-p').innerText = 'ОЖИДАНИЕ ПАРТНЕРА...';
+                document.getElementById('label-p').style.color = '#FFD700';
+                document.getElementById('v-p').innerHTML = `0 <div class="coin-icon"></div>`;
+                document.getElementById('f-p').style.width = '0%';
             }
             
             document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${me.current_week || 1} / 4`;
@@ -285,6 +308,15 @@
             } else {
                 shopBtn.disabled = true; shopBtn.classList.remove('active');
             }
+        },
+
+        copyPairCode() {
+            const codeText = this.profile.pair_code;
+            navigator.clipboard.writeText(codeText).then(() => {
+                alert('Код союза скопирован!');
+            }).catch(err => {
+                alert('Ваш код: ' + codeText);
+            });
         },
 
         openDateSelection() {
