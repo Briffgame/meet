@@ -190,7 +190,8 @@
         },
 
         async handleAuth() {
-            const email = document.getElementById('e_in').value.trim();
+            // Приводим email к нижнему регистру для исключения ошибок регистра букв
+            const email = document.getElementById('e_in').value.trim().toLowerCase();
             const password = document.getElementById('p_in').value;
             const nickname = document.getElementById('n_in').value.trim().toLowerCase();
             const code = document.getElementById('code_in').value.trim();
@@ -203,7 +204,8 @@
                 const { data, error: authError } = await sb.auth.signInWithPassword({ email: email, password: password });
                 
                 if (authError) { 
-                    alert('Ошибка входа: Неверный Email или Пароль!'); 
+                    // Выводим точный текст ошибки от сервера
+                    alert('Ошибка входа от сервера: ' + authError.message); 
                     this.askLogin(); 
                     return; 
                 }
@@ -217,19 +219,16 @@
             } else {
                 if (!nickname) { alert('Введите ваше Имя / Никнейм!'); this.askLogin(); return; }
                 
-                // 1. Создаем пользователя в системе авторизации Supabase
                 const { data, error: authError } = await sb.auth.signUp({ email: email, password: password });
                 if (authError) { alert('Ошибка создания аккаунта: ' + authError.message); this.askLogin(); return; }
 
                 if (data?.user) {
                     let finalPairCode = code;
 
-                    // Если код союза не введен — значит регистрируется первый партнер
                     if (!finalPairCode || finalPairCode.length !== 6) {
                         finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
                         alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}\n\nСкопируйте его из личного кабинета и отправьте партнеру. Ему нужно будет ввести его при своей регистрации.`);
                     } else {
-                        // Если код введен, проверяем, существует ли пара первого участника
                         const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', finalPairCode).limit(1);
                         if (!checkPair || checkPair.length === 0) {
                             alert('Указанный код союза не найден. Для вас сгенерирован новый независимый код.');
@@ -239,7 +238,6 @@
                         }
                     }
 
-                    // 2. Создаем карточку профиля с привязкой к системному id
                     const { error: profError } = await sb.from('profiles').insert([
                         { id: data.user.id, nickname: nickname, pair_code: finalPairCode, xp: 0, current_week: 1, used_dates: "" }
                     ]);
