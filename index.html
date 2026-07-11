@@ -112,9 +112,9 @@
         allDates: [{n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250}, {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500}, {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400}, {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Мини-трип", p:2000}, {n:"⛺ Пикник", p:800}, {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}],
 
         async init() {
-            const n = localStorage.getItem('briff_nick'), p = localStorage.getItem('briff_pass');
-            if (!n || !p) return this.askLogin();
-            const { data } = await sb.auth.signInWithPassword({ email: `${n.toLowerCase()}@gmail.com`, password: p });
+            const e = localStorage.getItem('briff_email'), p = localStorage.getItem('briff_pass');
+            if (!e || !p) return this.askLogin();
+            const { data } = await sb.auth.signInWithPassword({ email: e, password: p });
             if (data?.user) { this.user = data.user; await this.start(); } else { this.logout(); }
         },
 
@@ -124,8 +124,11 @@
                 <div style="width: 100%; max-width: 300px; text-align: center; margin: 0 auto;">
                     <h2 id="auth-title" style="margin-bottom: 20px; color: #FFD700;">ВХОД В СОЮЗ</h2>
                     
-                    <input type="text" id="n_in" placeholder="Ваш ник" 
+                    <input type="email" id="e_in" placeholder="Ваш Email" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
+                    
+                    <input type="text" id="n_in" placeholder="Ваше Имя / Никнейм" 
+                        style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
                     
                     <input type="password" id="p_in" placeholder="Пароль" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
@@ -149,6 +152,7 @@
             const title = document.getElementById('auth-title');
             const btn = document.getElementById('auth-btn');
             const toggle = document.getElementById('auth-toggle');
+            const nameInput = document.getElementById('n_in');
             const codeInput = document.getElementById('code_in');
 
             if (this.authMode === 'login') {
@@ -156,47 +160,50 @@
                 title.innerText = 'СОЗДАНИЕ ПАРЫ';
                 btn.innerText = 'ЗАРЕГИСТРИРОВАТЬСЯ';
                 toggle.innerText = 'Уже есть союз? Войти в аккаунт';
+                nameInput.style.display = 'block';
                 codeInput.style.display = 'block';
             } else {
                 this.authMode = 'login';
                 title.innerText = 'ВХОД В СОЮЗ';
                 btn.innerText = 'ВОЙТИ В СОЮЗ';
                 toggle.innerText = 'Нет союза? Создать новую пару';
+                nameInput.style.display = 'none';
                 codeInput.style.display = 'none';
             }
         },
 
         async handleAuth() {
-            const n = document.getElementById('n_in').value.trim();
+            const e = document.getElementById('e_in').value.trim();
             const p = document.getElementById('p_in').value;
-            const providedCode = document.getElementById('code_in').value.trim().toUpperCase();
+            const n = document.getElementById('n_in').value.trim();
+            let providedCode = document.getElementById('code_in').value.trim().toUpperCase();
 
-            if (!n || !p) { alert('Заполните все поля!'); return; }
+            if (!e || !p) { alert('Заполните обязательные поля (Email и Пароль)!'); return; }
+            if (this.authMode === 'register' && !n) { alert('Пожалуйста, введите ваше Имя/Никнейм для отображения в паре!'); return; }
 
             document.getElementById('loading-screen').innerHTML = '🪙 Обработка запроса...';
 
             if (this.authMode === 'login') {
-                const { data, error } = await sb.auth.signInWithPassword({ email: `${n.toLowerCase()}@gmail.com`, password: p });
+                const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p });
                 if (error) { alert('Ошибка входа: ' + error.message); this.askLogin(); return; }
                 
-                localStorage.setItem('briff_nick', n);
+                localStorage.setItem('briff_email', e);
                 localStorage.setItem('briff_pass', p);
                 location.reload();
             } else {
-                const { data, error } = await sb.auth.signUp({ email: `${n.toLowerCase()}@gmail.com`, password: p });
+                const { data, error } = await sb.auth.signUp({ email: e, password: p });
                 if (error) { alert('Ошибка регистрации: ' + error.message); this.askLogin(); return; }
 
                 if (data?.user) {
-                    let pairCode = providedCode;
-                    if (!pairCode) {
-                        pairCode = 'PAIR-' + Math.floor(1000 + Math.random() * 9000);
+                    if (!providedCode) {
+                        providedCode = 'PAIR-' + Math.floor(1000 + Math.random() * 9000);
                     }
 
                     const { error: profError } = await sb.from('profiles').insert([
                         { 
                             id: data.user.id, 
                             nickname: n, 
-                            pair_code: pairCode, 
+                            pair_code: providedCode, 
                             xp: 0, 
                             current_week: 1, 
                             used_dates: "" 
@@ -209,8 +216,8 @@
                         return;
                     }
 
-                    alert(`Пара создана! Ваш код союза: ${pairCode}. Дайте его партнеру при регистрации.`);
-                    localStorage.setItem('briff_nick', n);
+                    alert(`Пара создана! Ваш код союза: ${providedCode}. Дайте его партнеру при регистрации.`);
+                    localStorage.setItem('briff_email', e);
                     localStorage.setItem('briff_pass', p);
                     location.reload();
                 }
