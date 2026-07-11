@@ -141,14 +141,12 @@
                 <div style="width: 100%; max-width: 300px; text-align: center; margin: 0 auto;">
                     <h2 id="auth-title" style="margin-bottom: 20px; color: #FFD700;">ВХОД В СОЮЗ</h2>
                     
-                    <!-- Поля для Email регистрации (Изначально скрыты) -->
                     <input type="email" id="e_in" placeholder="Ваш Email" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
                     
                     <input type="password" id="p_in" placeholder="Пароль" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
 
-                    <!-- Поля для Имени и Кода (Видимы всегда!) -->
                     <input type="text" id="n_in" placeholder="Ваше Имя / Никнейм" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
                     
@@ -195,7 +193,8 @@
         },
 
         async handleAuth() {
-            const nickname = document.getElementById('n_in').value.trim();
+            // Приводим никнейм к нижнему регистру, чтобы регистр букв больше не имел значения!
+            const nickname = document.getElementById('n_in').value.trim().toLowerCase();
             const code = document.getElementById('code_in').value.trim();
             const email = document.getElementById('e_in').value.trim();
             const password = document.getElementById('p_in').value;
@@ -204,7 +203,6 @@
             document.getElementById('loading-screen').innerHTML = '🪙 Обработка...';
 
             if (this.authMode === 'login') {
-                // БЫСТРЫЙ ПОВТОРНЫЙ ВХОД (Без Email)
                 if (!code || code.length !== 6) { alert('Введите 6-значный цифровой код!'); this.askLogin(); return; }
                 
                 const { data: existingUser } = await sb.from('profiles').select('*').eq('pair_code', code).eq('nickname', nickname).maybeSingle();
@@ -213,7 +211,6 @@
                     localStorage.setItem('briff_user_id', existingUser.id);
                     location.reload();
                 } else {
-                    // Если записи нет, но код верный — создаем профиль «на лету» для этого союза
                     const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', code).limit(1);
                     if(checkPair && checkPair.length > 0) {
                         const generatedId = crypto.randomUUID();
@@ -228,7 +225,6 @@
                     }
                 }
             } else {
-                // ПЕРВИЧНАЯ РЕГИСТРАЦИЯ ЧЕРЕЗ EMAIL
                 if (!email || !password) { alert('Заполните Email и Пароль для регистрации!'); this.askLogin(); return; }
                 
                 const { data, error: authError } = await sb.auth.signUp({ email: email, password: password });
@@ -237,12 +233,10 @@
                 if (data?.user) {
                     let finalPairCode = code;
 
-                    // Если поле кода пустое — значит это ПЕРВЫЙ партнер. Генерируем новый код.
                     if (!finalPairCode || finalPairCode.length !== 6) {
                         finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
                         alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}\n\nПередайте эти 6 цифр партнеру.`);
                     } else {
-                        // Если код введен — проверяем, существует ли он в базе
                         const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', finalPairCode).limit(1);
                         if (!checkPair || checkPair.length === 0) {
                             alert('Введенный код союза не существует! Создан новый случайный код.');
