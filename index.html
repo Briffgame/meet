@@ -193,7 +193,6 @@
         },
 
         async handleAuth() {
-            // Приводим никнейм к нижнему регистру, чтобы регистр букв больше не имел значения!
             const nickname = document.getElementById('n_in').value.trim().toLowerCase();
             const code = document.getElementById('code_in').value.trim();
             const email = document.getElementById('e_in').value.trim();
@@ -205,7 +204,7 @@
             if (this.authMode === 'login') {
                 if (!code || code.length !== 6) { alert('Введите 6-значный цифровой код!'); this.askLogin(); return; }
                 
-                const { data: existingUser } = await sb.from('profiles').select('*').eq('pair_code', code).eq('nickname', nickname).maybeSingle();
+                const { data: existingUser, error: findErr } = await sb.from('profiles').select('*').eq('pair_code', code).eq('nickname', nickname).maybeSingle();
                 
                 if (existingUser) {
                     localStorage.setItem('briff_user_id', existingUser.id);
@@ -214,13 +213,15 @@
                     const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', code).limit(1);
                     if(checkPair && checkPair.length > 0) {
                         const generatedId = crypto.randomUUID();
-                        await sb.from('profiles').insert([
+                        const { error: insErr } = await sb.from('profiles').insert([
                             { id: generatedId, nickname: nickname, pair_code: code, xp: 0, current_week: 1, used_dates: "" }
                         ]);
+                        if(insErr) { alert('Ошибка привязки: ' + insErr.message); this.askLogin(); return; }
+                        
                         localStorage.setItem('briff_user_id', generatedId);
                         location.reload();
                     } else {
-                        alert('Союз с таким кодом не найден!');
+                        alert('Союз с таким кодом не найден! Убедитесь, что первый игрок уже создал пару.');
                         this.askLogin();
                     }
                 }
@@ -239,7 +240,7 @@
                     } else {
                         const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', finalPairCode).limit(1);
                         if (!checkPair || checkPair.length === 0) {
-                            alert('Введенный код союза не существует! Создан новый случайный код.');
+                            alert('Введенный код союза не найден. Создан новый код союза!');
                             finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
                         } else {
                             alert('Вы успешно подключились к союзу партнера!');
