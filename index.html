@@ -55,10 +55,15 @@
 
         .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
         
+        /* Защита кнопок от двойного тапа, зума и выделения текста */
         .btn-action { 
             width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; 
             cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: transform 0.1s ease-out; user-select: none; -webkit-user-select: none;
+            transition: transform 0.1s ease-out; 
+            touch-action: manipulation;
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         .btn-action:active { transform: scale(0.85); }
         
@@ -190,7 +195,6 @@
         },
 
         async handleAuth() {
-            // Приводим email к нижнему регистру для исключения ошибок регистра букв
             const email = document.getElementById('e_in').value.trim().toLowerCase();
             const password = document.getElementById('p_in').value;
             const nickname = document.getElementById('n_in').value.trim().toLowerCase();
@@ -199,12 +203,11 @@
             if (!email || !password) { alert('Заполните Email и Пароль!'); return; }
             document.getElementById('loading-screen').innerHTML = '🪙 Обработка...';
 
-            // --- РЕЖИМ ВХОДА (По Email и Паролю) ---
+            // --- РЕЖИМ ВХОДА ---
             if (this.authMode === 'login') {
                 const { data, error: authError } = await sb.auth.signInWithPassword({ email: email, password: password });
                 
                 if (authError) { 
-                    // Выводим точный текст ошибки от сервера
                     alert('Ошибка входа от сервера: ' + authError.message); 
                     this.askLogin(); 
                     return; 
@@ -268,9 +271,21 @@
                 .subscribe();
         },
 
-        renderTasks() { document.getElementById('tasks').innerHTML = this.tasks.map(t => `<div class="task-card"><div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div><div style="display:flex; gap:10px;"><button class="btn-action minus" onclick="app.doTask(${(t.x*-1)})">−</button><button class="btn-action plus" onclick="app.doTask(${t.x})">+</button></div></div>`).join(''); },
+        renderTasks() { 
+            document.getElementById('tasks').innerHTML = this.tasks.map(t => `
+                <div class="task-card">
+                    <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-action minus" onclick="app.doTask(${(t.x*-1)}, event)">−</button>
+                        <button class="btn-action plus" onclick="app.doTask(${t.x}, event)">+</button>
+                    </div>
+                </div>
+            `).join(''); 
+        },
 
-        async doTask(val) {
+        async doTask(val, event) {
+            if (event) { event.preventDefault(); }
+
             const myXpEl = document.getElementById('v-my');
             const card = document.getElementById('main-card');
             
@@ -286,7 +301,8 @@
             const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user_id).single();
             const newXp = Math.max(0, (cur.xp || 0) + val);
             await sb.from('profiles').update({ xp: newXp }).eq('id', this.user_id);
-            this.profile.xp = newXp; this.refresh();
+            this.profile.xp = newXp; 
+            this.refresh();
         },
 
         async refresh() {
