@@ -141,18 +141,18 @@
                 <div style="width: 100%; max-width: 300px; text-align: center; margin: 0 auto;">
                     <h2 id="auth-title" style="margin-bottom: 20px; color: #FFD700;">ВХОД В СОЮЗ</h2>
                     
-                    <!-- Поля для Регистрации (Изначально скрыты) -->
+                    <!-- Поля для Email регистрации (Изначально скрыты) -->
                     <input type="email" id="e_in" placeholder="Ваш Email" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
                     
                     <input type="password" id="p_in" placeholder="Пароль" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
 
-                    <!-- Поля для Входа (Активны всегда) -->
+                    <!-- Поля для Имени и Кода (Видимы всегда!) -->
                     <input type="text" id="n_in" placeholder="Ваше Имя / Никнейм" 
                         style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
                     
-                    <input type="text" id="code_in" placeholder="6-значный код пары" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                    <input type="text" id="code_in" placeholder="6-значный код пары (если есть)" inputmode="numeric" pattern="[0-9]*" maxlength="6"
                         style="width:100%; padding:18px; margin-bottom:20px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
                     
                     <button id="auth-btn" onclick="app.handleAuth()" 
@@ -161,7 +161,7 @@
                     </button>
 
                     <div id="auth-toggle" style="color: #666; cursor: pointer; font-size: 0.9rem; text-decoration: underline;" onclick="app.toggleAuthMode()">
-                        Нет союза? Создать новую пару (Email)
+                        Нет союза? Создать / Подключить пару (Email)
                     </div>
                 </div>
             `;
@@ -177,20 +177,20 @@
 
             if (this.authMode === 'login') {
                 this.authMode = 'register';
-                title.innerText = 'СОЗДАНИЕ ПАРЫ';
+                title.innerText = 'РЕГИСТРАЦИЯ';
                 btn.innerText = 'ЗАРЕГИСТРИРОВАТЬСЯ';
-                toggle.innerText = 'Уже есть пара? Быстрый вход по коду';
+                toggle.innerText = 'Уже зарегистрированы? Быстрый вход по коду';
                 emailInput.style.display = 'block';
                 passInput.style.display = 'block';
-                codeInput.style.display = 'none'; // при создании пары код сгенерируется сам
+                codeInput.placeholder = 'Код союза партнера (если есть)';
             } else {
                 this.authMode = 'login';
                 title.innerText = 'ВХОД В СОЮЗ';
                 btn.innerText = 'ВОЙТИ';
-                toggle.innerText = 'Нет союза? Создать новую пару (Email)';
+                toggle.innerText = 'Нет союза? Создать / Подключить пару (Email)';
                 emailInput.style.display = 'none';
                 passInput.style.display = 'none';
-                codeInput.style.display = 'block';
+                codeInput.placeholder = '6-значный код пары';
             }
         },
 
@@ -201,21 +201,21 @@
             const password = document.getElementById('p_in').value;
 
             if (!nickname) { alert('Введите ваше Имя!'); return; }
-            document.getElementById('loading-screen').innerHTML = '🪙 Проверка союза...';
+            document.getElementById('loading-screen').innerHTML = '🪙 Обработка...';
 
             if (this.authMode === 'login') {
-                if (!code || code.length !== 6) { alert('Введите правильный 6-значный цифровой код союза!'); this.askLogin(); return; }
+                // БЫСТРЫЙ ПОВТОРНЫЙ ВХОД (Без Email)
+                if (!code || code.length !== 6) { alert('Введите 6-значный цифровой код!'); this.askLogin(); return; }
                 
-                // Ищем профиль в базе по связке Имени и Кода пары
-                const { data: existingUser, error } = await sb.from('profiles').select('*').eq('pair_code', code).eq('nickname', nickname).maybeSingle();
+                const { data: existingUser } = await sb.from('profiles').select('*').eq('pair_code', code).eq('nickname', nickname).maybeSingle();
                 
                 if (existingUser) {
                     localStorage.setItem('briff_user_id', existingUser.id);
                     location.reload();
                 } else {
-                    // Если создатель пары дал код партнеру, а партнера еще нет в таблице — создаем его запись внутри этого союза
-                    const checkPair = await sb.from('profiles').select('pair_code').eq('pair_code', code).limit(1);
-                    if(checkPair.data && checkPair.data.length > 0) {
+                    // Если записи нет, но код верный — создаем профиль «на лету» для этого союза
+                    const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', code).limit(1);
+                    if(checkPair && checkPair.length > 0) {
                         const generatedId = crypto.randomUUID();
                         await sb.from('profiles').insert([
                             { id: generatedId, nickname: nickname, pair_code: code, xp: 0, current_week: 1, used_dates: "" }
@@ -223,26 +223,41 @@
                         localStorage.setItem('briff_user_id', generatedId);
                         location.reload();
                     } else {
-                        alert('Такой код союза не найден! Сверьте цифры с партнером.');
+                        alert('Союз с таким кодом не найден!');
                         this.askLogin();
                     }
                 }
             } else {
-                // Первичная регистрация через Email
-                if (!email || !password) { alert('Для создания пары заполните Email и Пароль!'); this.askLogin(); return; }
+                // ПЕРВИЧНАЯ РЕГИСТРАЦИЯ ЧЕРЕЗ EMAIL
+                if (!email || !password) { alert('Заполните Email и Пароль для регистрации!'); this.askLogin(); return; }
                 
                 const { data, error: authError } = await sb.auth.signUp({ email: email, password: password });
-                if (authError) { alert('Ошибка регистрации: ' + authError.message); this.askLogin(); return; }
+                if (authError) { alert('Ошибка: ' + authError.message); this.askLogin(); return; }
 
                 if (data?.user) {
-                    const newPairCode = String(Math.floor(100000 + Math.random() * 900000));
+                    let finalPairCode = code;
+
+                    // Если поле кода пустое — значит это ПЕРВЫЙ партнер. Генерируем новый код.
+                    if (!finalPairCode || finalPairCode.length !== 6) {
+                        finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
+                        alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}\n\nПередайте эти 6 цифр партнеру.`);
+                    } else {
+                        // Если код введен — проверяем, существует ли он в базе
+                        const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', finalPairCode).limit(1);
+                        if (!checkPair || checkPair.length === 0) {
+                            alert('Введенный код союза не существует! Создан новый случайный код.');
+                            finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
+                        } else {
+                            alert('Вы успешно подключились к союзу партнера!');
+                        }
+                    }
+
                     const { error: profError } = await sb.from('profiles').insert([
-                        { id: data.user.id, nickname: nickname, pair_code: newPairCode, xp: 0, current_week: 1, used_dates: "" }
+                        { id: data.user.id, nickname: nickname, pair_code: finalPairCode, xp: 0, current_week: 1, used_dates: "" }
                     ]);
 
-                    if (profError) { alert('Ошибка записи профиля: ' + profError.message); this.askLogin(); return; }
+                    if (profError) { alert('Ошибка базы профилей: ' + profError.message); this.askLogin(); return; }
 
-                    alert(`Пара успешно создана!\n\nВаш ЦИФРОВОЙ КОД СОЮЗА: ${newPairCode}\n\nПередайте эти 6 цифр партнеру для быстрого входа.`);
                     localStorage.setItem('briff_user_id', data.user.id);
                     location.reload();
                 }
@@ -260,7 +275,6 @@
             this.renderTasks(); 
             await this.refresh();
 
-            // Мгновенный Realtime по коду пары
             sb.channel('pair_channel')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `pair_code=eq.${this.profile.pair_code}` }, async () => {
                     await this.refresh();
