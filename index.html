@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Кошелек Свиданий</title>
     
     <link rel="apple-touch-icon" href="logo.png">
@@ -13,8 +13,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
-        * { -webkit-tap-highlight-color: transparent; }
+        body { 
+            background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; 
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; 
+            -webkit-tap-highlight-color: transparent; padding-bottom: 120px;
+            /* Жесткая блокировка скролла и зума на уровне всего body для предотвращения прыжков */
+            overflow-x: hidden;
+        }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 
         .container { width: 100%; max-width: 400px; }
         
@@ -44,7 +50,7 @@
         .bump { transform: scale(1.3) !important; filter: brightness(1.3); }
         .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
         
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; box-sizing: border-box; position: relative; transition: border-color 0.3s; }
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; position: relative; transition: border-color 0.3s; }
         .stats-card.update-flash { border-color: #FFD700; }
 
         .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
@@ -53,14 +59,14 @@
         .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
         .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
 
-        .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; box-sizing: border-box; }
+        .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; }
         
-        /* Защита кнопок от двойного тапа, зума и выделения текста */
+        /* Полная блокировка любых стандартных жестов браузера на кнопках */
         .btn-action { 
             width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; 
             cursor: pointer; display: flex; align-items: center; justify-content: center; 
             transition: transform 0.1s ease-out; 
-            touch-action: manipulation;
+            touch-action: none; /* Полностью отключает системный зум, скролл и double-tap-to-zoom */
             user-select: none; 
             -webkit-user-select: none;
             -webkit-touch-callout: none;
@@ -73,12 +79,12 @@
         #shop-trigger-btn { width: 100%; background: #222; color: #444; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #333; font-size: 1.1rem; transition: all 0.4s ease; opacity: 0.6; }
         #shop-trigger-btn.active { background: linear-gradient(135deg, #FFD700, #FFA500); color: #121212; border: none; opacity: 1; box-shadow: 0 10px 25px rgba(255,215,0,0.3); }
         
-        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px); }
+        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; backdrop-filter: blur(10px); }
         .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
-<body ontouchstart="">
+<body>
 
 <div id="loading-screen" style="margin-top:100px; display: flex; justify-content: center; width: 100%;">🪙 Синхронизация союза...</div>
 
@@ -145,27 +151,12 @@
             document.getElementById('loading-screen').innerHTML = `
                 <div style="width: 100%; max-width: 300px; text-align: center; margin: 0 auto;">
                     <h2 id="auth-title" style="margin-bottom: 20px; color: #FFD700;">ВХОД В ПРИЛОЖЕНИЕ</h2>
-                    
-                    <input type="email" id="e_in" placeholder="Ваш Email" 
-                        style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
-                    
-                    <input type="password" id="p_in" placeholder="Пароль" 
-                        style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none;">
-
-                    <input type="text" id="n_in" placeholder="Ваше Имя / Никнейм" 
-                        style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
-                    
-                    <input type="text" id="code_in" placeholder="6-значный код партнера (если есть)" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                        style="width:100%; padding:18px; margin-bottom:20px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; box-sizing:border-box; outline:none; display:none;">
-                    
-                    <button id="auth-btn" onclick="app.handleAuth()" 
-                        style="width:100%; padding:18px; background:linear-gradient(135deg, #00d4ff, #008fb3); border:none; color:#121212; font-weight:bold; border-radius:18px; font-size:1rem; cursor:pointer; margin-bottom: 15px;">
-                        ВОЙТИ
-                    </button>
-
-                    <div id="auth-toggle" style="color: #666; cursor: pointer; font-size: 0.9rem; text-decoration: underline;" onclick="app.toggleAuthMode()">
-                        У вас нет аккаунта? Зарегистрироваться
-                    </div>
+                    <input type="email" id="e_in" placeholder="Ваш Email" style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none;">
+                    <input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none;">
+                    <input type="text" id="n_in" placeholder="Ваше Имя / Никнейм" style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none; display:none;">
+                    <input type="text" id="code_in" placeholder="6-значный код партнера" inputmode="numeric" pattern="[0-9]*" maxlength="6" style="width:100%; padding:18px; margin-bottom:20px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none; display:none;">
+                    <button id="auth-btn" onclick="app.handleAuth()" style="width:100%; padding:18px; background:linear-gradient(135deg, #00d4ff, #008fb3); border:none; color:#121212; font-weight:bold; border-radius:18px; font-size:1rem; cursor:pointer; margin-bottom: 15px;">ВОЙТИ</button>
+                    <div id="auth-toggle" style="color: #666; cursor: pointer; font-size: 0.9rem; text-decoration: underline;" onclick="app.toggleAuthMode()">У вас нет аккаунта? Зарегистрироваться</div>
                 </div>
             `;
         },
@@ -203,50 +194,27 @@
             if (!email || !password) { alert('Заполните Email и Пароль!'); return; }
             document.getElementById('loading-screen').innerHTML = '🪙 Обработка...';
 
-            // --- РЕЖИМ ВХОДА ---
             if (this.authMode === 'login') {
                 const { data, error: authError } = await sb.auth.signInWithPassword({ email: email, password: password });
-                
-                if (authError) { 
-                    alert('Ошибка входа от сервера: ' + authError.message); 
-                    this.askLogin(); 
-                    return; 
-                }
-
-                if (data?.user) {
-                    localStorage.setItem('briff_user_id', data.user.id);
-                    location.reload();
-                }
-
-            // --- РЕЖИМ РЕГИСТРАЦИИ ---
+                if (authError) { alert('Ошибка входа от сервера: ' + authError.message); this.askLogin(); return; }
+                if (data?.user) { localStorage.setItem('briff_user_id', data.user.id); location.reload(); }
             } else {
                 if (!nickname) { alert('Введите ваше Имя / Никнейм!'); this.askLogin(); return; }
-                
                 const { data, error: authError } = await sb.auth.signUp({ email: email, password: password });
                 if (authError) { alert('Ошибка создания аккаунта: ' + authError.message); this.askLogin(); return; }
 
                 if (data?.user) {
                     let finalPairCode = code;
-
                     if (!finalPairCode || finalPairCode.length !== 6) {
                         finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
-                        alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}\n\nСкопируйте его из личного кабинета и отправьте партнеру. Ему нужно будет ввести его при своей регистрации.`);
+                        alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}`);
                     } else {
                         const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', finalPairCode).limit(1);
                         if (!checkPair || checkPair.length === 0) {
-                            alert('Указанный код союза не найден. Для вас сгенерирован новый независимый код.');
                             finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
-                        } else {
-                            alert('Вы успешно подключились к союзу партнера!');
                         }
                     }
-
-                    const { error: profError } = await sb.from('profiles').insert([
-                        { id: data.user.id, nickname: nickname, pair_code: finalPairCode, xp: 0, current_week: 1, used_dates: "" }
-                    ]);
-
-                    if (profError) { alert('Ошибка создания карточки профиля: ' + profError.message); this.askLogin(); return; }
-
+                    await sb.from('profiles').insert([{ id: data.user.id, nickname: nickname, pair_code: finalPairCode, xp: 0, current_week: 1, used_dates: "" }]);
                     localStorage.setItem('briff_user_id', data.user.id);
                     location.reload();
                 }
@@ -272,20 +240,38 @@
         },
 
         renderTasks() { 
-            document.getElementById('tasks').innerHTML = this.tasks.map(t => `
+            const container = document.getElementById('tasks');
+            container.innerHTML = this.tasks.map((t, index) => `
                 <div class="task-card">
                     <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn-action minus" onclick="app.doTask(${(t.x*-1)}, event)">−</button>
-                        <button class="btn-action plus" onclick="app.doTask(${t.x}, event)">+</button>
+                        <button class="btn-action minus" id="btn-minus-${index}">−</button>
+                        <button class="btn-action plus" id="btn-plus-${index}">+</button>
                     </div>
                 </div>
             `).join(''); 
+
+            // Навешиваем прямое тач-событие, которое на корню пресекает любые прыжки экрана
+            this.tasks.forEach((t, index) => {
+                const btnMinus = document.getElementById(`btn-minus-${index}`);
+                const btnPlus = document.getElementById(`btn-plus-${index}`);
+
+                const handleTouch = (val, e) => {
+                    e.preventDefault(); // Полная отмена стандартного поведения мобильного браузера
+                    e.stopPropagation();
+                    app.doTask(val);
+                };
+
+                btnMinus.addEventListener('touchstart', (e) => handleTouch(t.x * -1, e), { passive: false });
+                btnPlus.addEventListener('touchstart', (e) => handleTouch(t.x, e), { passive: false });
+                
+                // Дублируем для десктопа (мышка)
+                btnMinus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x * -1); });
+                btnPlus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x); });
+            });
         },
 
-        async doTask(val, event) {
-            if (event) { event.preventDefault(); }
-
+        async doTask(val) {
             const myXpEl = document.getElementById('v-my');
             const card = document.getElementById('main-card');
             
@@ -317,12 +303,10 @@
             document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
-                document.getElementById('label-p').style.color = '#888';
                 document.getElementById('v-p').innerHTML = `${p.xp} <div class="coin-icon"></div>`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
             } else {
                 document.getElementById('label-p').innerText = 'ОЖИДАНИЕ ПАРТНЕРА...';
-                document.getElementById('label-p').style.color = '#FFD700';
                 document.getElementById('v-p').innerHTML = `0 <div class="coin-icon"></div>`;
                 document.getElementById('f-p').style.width = '0%';
             }
@@ -345,11 +329,7 @@
 
         copyPairCode() {
             const codeText = this.profile.pair_code;
-            navigator.clipboard.writeText(codeText).then(() => {
-                alert('Код союза скопирован!');
-            }).catch(err => {
-                alert('Ваш код: ' + codeText);
-            });
+            navigator.clipboard.writeText(codeText).then(() => { alert('Код союза скопирован!'); }).catch(err => { alert('Ваш код: ' + codeText); });
         },
 
         openDateSelection() {
