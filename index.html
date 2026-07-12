@@ -551,6 +551,17 @@
         async refresh() {
             const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
             if (!team) return;
+            
+            // КРИТИЧЕСКОЕ ОБНОВЛЕНИЕ: Перезапрашиваем задачи из базы данных при любом обновлении союза
+            await this.loadTasksFromDB();
+            
+            // Перерисовываем списки на экранах
+            if (this.profile.setup_done === false) {
+                this.renderWizardTasks();
+            } else {
+                this.renderTasks();
+            }
+
             const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
             if (me) this.updateUI(me, p);
         },
