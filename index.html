@@ -4,19 +4,36 @@ async handleAuth() {
             const nickname = document.getElementById('n_in').value.trim();
             const code = document.getElementById('code_in').value.trim();
 
-            if (!email || !password) { alert('Заполните Email и Пароль!'); return; }
+            if (!email || !password) { 
+                alert('Заполните Email и Пароль!'); 
+                return; 
+            }
             document.getElementById('loading-screen').innerHTML = '🪙 Обработка...';
 
             if (this.authMode === 'login') {
                 const { data, error: authError } = await sb.auth.signInWithPassword({ email: email, password: password });
-                if (authError) { alert('Ошибка входа: ' + authError.message); this.askLogin(); return; }
-                if (data?.user) { localStorage.setItem('briff_user_id', data.user.id); location.reload(); }
+                if (authError) { 
+                    alert('Ошибка входа: ' + authError.message); 
+                    this.askLogin(); 
+                    return; 
+                }
+                if (data?.user) { 
+                    localStorage.setItem('briff_user_id', data.user.id); 
+                    location.reload(); 
+                }
             } else {
-                if (!nickname) { alert('Введите ваше Имя / Никнейм!'); this.askLogin(); return; }
+                if (!nickname) { 
+                    alert('Введите ваше Имя / Никнейм!'); 
+                    this.askLogin(); 
+                    return; 
+                }
                 
-                // 1. Создаем аккаунт в Auth
                 const { data: signUpData, error: authError } = await sb.auth.signUp({ email: email, password: password });
-                if (authError) { alert('Ошибка создания аккаунта: ' + authError.message); this.askLogin(); return; }
+                if (authError) { 
+                    alert('Ошибка создания аккаунта: ' + authError.message); 
+                    this.askLogin(); 
+                    return; 
+                }
 
                 if (signUpData?.user) {
                     let finalPairCode = code;
@@ -26,7 +43,6 @@ async handleAuth() {
                         alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}`);
                     }
                     
-                    // 2. Создаем профиль в базе данных
                     const { error: dbError } = await sb.from('profiles').insert([{ 
                         id: signUpData.user.id, 
                         nickname: nickname, 
@@ -43,7 +59,6 @@ async handleAuth() {
                         return;
                     }
                     
-                    // 3. АВТО-ВХОД: Сразу логинимся, чтобы сессия создалась корректно
                     const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email: email, password: password });
                     
                     if (signInError) {
