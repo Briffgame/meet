@@ -64,7 +64,6 @@
         .delete-btn { background: #ff0055; color: white; font-size: 1.2rem; width: 55px; height: 55px; border-radius: 18px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
         .delete-btn:active { transform: scale(0.85); }
 
-        /* Стили для Визарда и панели настроек */
         .wizard-card { background: #1e1e1e; padding: 20px; border-radius: 22px; border: 1px solid #333; margin-bottom: 15px; }
         .wizard-input { width: 100%; padding: 15px; background: #121212; border: 1px solid #333; color: white; border-radius: 14px; outline: none; margin-bottom: 15px; font-size: 1rem; }
         .val-chips { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -73,7 +72,7 @@
         .btn-ui { width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
         .btn-primary { background: linear-gradient(135deg, #00d4ff, #008fb3); color: #121212; }
         .btn-secondary { background: #2a2a2a; color: white; margin-top: 10px; }
-        .wizard-item { display: flex; justify-content: space-between; background: #121212; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #222; font-size: 0.95rem; }
+        .wizard-item { display: flex; justify-content: space-between; align-items: center; background: #121212; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #222; font-size: 0.95rem; }
 
         #shop-trigger-btn { width: 100%; background: #222; color: #444; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #333; font-size: 1.1rem; transition: all 0.4s ease; opacity: 0.6; }
         #shop-trigger-btn.active { background: linear-gradient(135deg, #FFD700, #FFA500); color: #121212; border: none; opacity: 1; box-shadow: 0 10px 25px rgba(255,215,0,0.3); }
@@ -94,7 +93,7 @@
 <!-- ЭКРАН НАСТРОЙКИ ЗАДАЧ (WIZARD) -->
 <div class="container" id="wizard-screen" style="display:none;">
     <h2 style="text-align: center; color: #FFD700; margin-bottom: 5px;">НАСТРОЙКА ИГРЫ</h2>
-    <p style="text-align: center; color: #888; font-size: 0.9rem; margin-top: 0; margin-bottom: 25px;">Шаг 1: Добавьте домашние задачи вашей пары</p>
+    <p style="text-align: center; color: #888; font-size: 0.9rem; margin-top: 0; margin-bottom: 25px;">Шаг 1: Добавьте или скорректируйте домашние задачи вашей пары</p>
     
     <div class="wizard-card">
         <input type="text" id="task-name-input" class="wizard-input" placeholder="Название задачи (например: Помыть посуду)">
@@ -107,10 +106,10 @@
         <button class="btn-ui btn-secondary" onclick="app.addWizardTask()">➕ ДОБАВИТЬ В СПИСОК</button>
     </div>
 
-    <h3 style="margin-left: 5px; margin-bottom: 10px;">Ваш список задач:</h3>
+    <h3 style="margin-left: 5px; margin-bottom: 10px;">Общий список задач пары:</h3>
     <div id="wizard-tasks-list" style="margin-bottom: 25px;"></div>
 
-    <button class="btn-ui btn-primary" onclick="app.saveWizardTasks()">СОХРАНИТЬ И ДАЛЕЕ ➔</button>
+    <button class="btn-ui btn-primary" onclick="app.saveWizardTasks()">СОХРАНИТЬ И ИГРАТЬ ➔</button>
 </div>
 
 <!-- ГЛАВНЫЙ ЭКРАН ИГРЫ -->
@@ -142,14 +141,15 @@
 
     <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
     
-    <!-- ЗАГОЛОВОК СПИСКА ЗАДАЧ -->
     <div class="section-header">
         <h3 style="margin: 0;">СПИСОК ЗАДАЧ</h3>
         <button id="edit-mode-btn" class="manage-tasks-btn" onclick="app.toggleEditMode()">⚙️ Настройка задач</button>
     </div>
 
-    <!-- МИНИ-ФОРМА ДОБАВЛЕНИЯ В РЕЖИМЕ РЕДАКТИРОВАНИЯ -->
+    <!-- МИНИ-ФОРМА ДОБАВЛЕНИЯ И ТЕСТОВЫЙ ТУМБЛЕР -->
     <div id="inline-task-form" class="wizard-card" style="display: none; border-color: #FFD700;">
+        <button class="btn-ui" id="debug-shop-btn" style="background: #333; color: #FFD700; border: 1px solid #FFD700; padding: 10px; margin-bottom: 20px; font-size: 0.85rem;" onclick="app.toggleDebugShop()">🔓 Тест: Открыть магазин (Вкл/Выкл)</button>
+        
         <h4 style="margin-top: 0; margin-bottom: 10px; color: #FFD700;">➕ Добавить новую задачу:</h4>
         <input type="text" id="inline-task-input" class="wizard-input" style="margin-bottom: 10px;" placeholder="Название (например: Вынести мусор)">
         <div class="val-chips" style="margin-bottom: 15px;">
@@ -181,8 +181,8 @@
     const app = {
         user_id: null, profile: null, authMode: 'login',
         wizardTasks: [], selectedValue: 30, inlineSelectedValue: 30,
-        tasks: [], isEditMode: false,
-        allDates: [{n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250}, {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500}, {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400}, {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Мини-трип", p:2000}, {n:"⛺ Пикник", p:800}, {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}],
+        tasks: [], isEditMode: false, isDebugShopOpen: false,
+        allDates: [{n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250}, {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500}, {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400}, {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Mini-трип", p:2000}, {n:"⛺ Пикник", p:800}, {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}],
 
         async init() {
             const savedId = localStorage.getItem('briff_user_id');
@@ -234,7 +234,7 @@
         async handleAuth() {
             const email = document.getElementById('e_in').value.trim().toLowerCase();
             const password = document.getElementById('p_in').value;
-            const nickname = document.getElementById('n_in').value.trim().toLowerCase();
+            const nickname = document.getElementById('n_in').value.trim();
             const code = document.getElementById('code_in').value.trim();
 
             if (!email || !password) { alert('Заполните Email и Пароль!'); return; }
@@ -242,7 +242,7 @@
 
             if (this.authMode === 'login') {
                 const { data, error: authError } = await sb.auth.signInWithPassword({ email: email, password: password });
-                if (authError) { alert('Ошибка входа от сервера: ' + authError.message); this.askLogin(); return; }
+                if (authError) { alert('Ошибка входа: ' + authError.message); this.askLogin(); return; }
                 if (data?.user) { localStorage.setItem('briff_user_id', data.user.id); location.reload(); }
             } else {
                 if (!nickname) { alert('Введите ваше Имя / Никнейм!'); this.askLogin(); return; }
@@ -251,16 +251,25 @@
 
                 if (data?.user) {
                     let finalPairCode = code;
+                    let isNewSetup = false;
+                    
                     if (!finalPairCode || finalPairCode.length !== 6) {
                         finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
+                        isNewSetup = true;
                         alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}`);
-                    } else {
-                        const { data: checkPair } = await sb.from('profiles').select('pair_code').eq('pair_code', finalPairCode).limit(1);
-                        if (!checkPair || checkPair.length === 0) {
-                            finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
-                        }
                     }
-                    await sb.from('profiles').insert([{ id: data.user.id, nickname: nickname, pair_code: finalPairCode, xp: 0, current_week: 1, used_dates: "" }]);
+                    
+                    // По умолчанию ставим setup_done = false для всех новых регистраций, чтобы они прошли Wizard
+                    await sb.from('profiles').insert([{ 
+                        id: data.user.id, 
+                        nickname: nickname, 
+                        pair_code: finalPairCode, 
+                        xp: 0, 
+                        current_week: 1, 
+                        used_dates: "",
+                        setup_done: false 
+                    }]);
+                    
                     localStorage.setItem('briff_user_id', data.user.id);
                     location.reload();
                 }
@@ -275,10 +284,10 @@
             document.getElementById('pair-display').innerText = `КОД СОЮЗА: ${pr.pair_code}`;
             
             await this.loadTasksFromDB();
-            
             document.getElementById('loading-screen').style.display = 'none';
 
-            if (this.tasks.length === 0) {
+            // Если у пользователя setup_done равен false, отправляем его в Wizard
+            if (this.profile.setup_done === false) {
                 document.getElementById('wizard-screen').style.display = 'block';
                 this.renderWizardTasks();
             } else {
@@ -287,18 +296,21 @@
                 await this.refresh();
             }
 
-            // Живая подписка на изменения профилей
+            // Realtime подписки
             sb.channel('pair_channel')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `pair_code=eq.${this.profile.pair_code}` }, async () => {
                     await this.refresh();
                 })
                 .subscribe();
 
-            // Живая подписка на добавление/удаление задач другими устройствами
             sb.channel('tasks_channel')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `pair_code=eq.${this.profile.pair_code}` }, async () => {
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `pair_code=eq.${this.profile.pair_code}` }, async (payload) => {
                     await this.loadTasksFromDB();
-                    this.renderTasks();
+                    if (this.profile.setup_done === false) {
+                        this.renderWizardTasks();
+                    } else {
+                        this.renderTasks();
+                    }
                 })
                 .subscribe();
         },
@@ -318,46 +330,65 @@
             this.selectedValue = val;
         },
 
-        addWizardTask() {
+        async addWizardTask() {
             const input = document.getElementById('task-name-input');
             const name = input.value.trim();
             if (!name) { alert('Введите название задачи!'); return; }
             
-            this.wizardTasks.push({ text: name, difficulty: this.selectedValue });
-            input.value = '';
-            this.renderWizardTasks();
+            // Сразу пушим задачу в базу, чтобы партнер увидел изменения realtime в своем визарде
+            const { error } = await sb.from('tasks').insert([{
+                pair_code: this.profile.pair_code,
+                text: name,
+                difficulty: this.selectedValue
+            }]);
+
+            if (error) {
+                alert('Ошибка добавления: ' + error.message);
+            } else {
+                input.value = '';
+                await this.loadTasksFromDB();
+                this.renderWizardTasks();
+            }
+        },
+
+        async deleteWizardTask(dbId) {
+            const { error } = await sb.from('tasks').delete().eq('id', dbId);
+            if (!error) {
+                await this.loadTasksFromDB();
+                this.renderWizardTasks();
+            }
         },
 
         renderWizardTasks() {
             const container = document.getElementById('wizard-tasks-list');
-            if (this.wizardTasks.length === 0) {
-                container.innerHTML = `<div style="color:#666; font-style:italic; text-align:center; padding:10px;">Список пока пуст...</div>`;
+            if (this.tasks.length === 0) {
+                container.innerHTML = `<div style="color:#666; font-style:italic; text-align:center; padding:10px;">Список пуст. Добавьте первую задачу союза.</div>`;
                 return;
             }
-            container.innerHTML = this.wizardTasks.map((t, index) => `
+            container.innerHTML = this.tasks.map((t) => `
                 <div class="wizard-item">
-                    <span>${t.text}</span>
-                    <span style="color:#FFD700; font-weight:bold;">+${t.difficulty} 🪙</span>
+                    <div>
+                        <span><b>${t.n}</b></span><br>
+                        <span style="color:#FFD700; font-size:0.85rem; font-weight:bold;">+${t.x} 🪙</span>
+                    </div>
+                    <button style="background:none; border:none; color:#ff0055; font-size:1.1rem; cursor:pointer;" onclick="app.deleteWizardTask('${t.id}')">🗑️</button>
                 </div>
             `).join('');
         },
 
         async saveWizardTasks() {
-            if (this.wizardTasks.length === 0) {
-                alert('Добавьте хотя бы одну задачу перед продолжением!');
+            if (this.tasks.length === 0) {
+                alert('Добавьте хотя бы одну задачу для союза перед началом игры!');
                 return;
             }
-            document.getElementById('wizard-screen').innerHTML = `<div style="text-align:center; padding:40px;">🪙 Сохраняем задачи в базу союза...</div>`;
-
-            const rowsToInsert = this.wizardTasks.map(t => ({
-                pair_code: this.profile.pair_code,
-                text: t.text,
-                difficulty: t.difficulty
-            }));
-
-            const { error } = await sb.from('tasks').insert(rowsToInsert);
-            if (error) { alert('Ошибка при сохранении: ' + error.message); location.reload(); } 
-            else { alert('Задачи союза успешно сохранены!'); location.reload(); }
+            
+            // Помечаем, что текущий пользователь завершил настройку
+            const { error } = await sb.from('profiles').update({ setup_done: true }).eq('id', this.user_id);
+            if (error) {
+                alert('Ошибка сохранения статуса: ' + error.message);
+            } else {
+                location.reload();
+            }
         },
 
         toggleEditMode() {
@@ -375,6 +406,21 @@
                 form.style.display = 'none';
             }
             this.renderTasks();
+        },
+
+        toggleDebugShop() {
+            this.isDebugShopOpen = !this.isDebugShopOpen;
+            const btn = document.getElementById('debug-shop-btn');
+            if (this.isDebugShopOpen) {
+                btn.style.background = '#FFD700';
+                btn.style.color = '#121212';
+                btn.innerText = '🔒 Выключить обход времени';
+            } else {
+                btn.style.background = '#333';
+                btn.style.color = '#FFD700';
+                btn.innerText = '🔓 Тест: Открыть магазин (Вкл/Выкл)';
+            }
+            this.refresh();
         },
 
         selectInlineChip(val, el) {
@@ -490,10 +536,14 @@
         updateUI(me, p) {
             document.getElementById('v-my').innerHTML = `${me.xp} <div class="coin-icon"></div>`;
             document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
+            
+            let totalPairXp = me.xp;
+
             if(p) {
                 document.getElementById('label-p').innerText = p.nickname.toUpperCase();
                 document.getElementById('v-p').innerHTML = `${p.xp} <div class="coin-icon"></div>`;
                 document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
+                totalPairXp += p.xp;
             } else {
                 document.getElementById('label-p').innerText = 'ОЖИДАНИЕ ПАРТНЕРА...';
                 document.getElementById('v-p').innerHTML = `0 <div class="coin-icon"></div>`;
@@ -509,7 +559,7 @@
             const isLeader = p ? (me.xp > p.xp) : (me.xp > 0);
             const shopBtn = document.getElementById('shop-trigger-btn');
             
-            if (isFridayEvening && isLeader && me.xp > 0) {
+            if ((isFridayEvening || this.isDebugShopOpen) && isLeader && totalPairXp > 0) {
                 shopBtn.disabled = false; shopBtn.classList.add('active');
             } else {
                 shopBtn.disabled = true; shopBtn.classList.remove('active');
@@ -521,20 +571,52 @@
             navigator.clipboard.writeText(codeText).then(() => { alert('Код союза скопирован!'); }).catch(err => { alert('Ваш код: ' + codeText); });
         },
 
-        openDateSelection() {
+        async openDateSelection() {
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
+            const totalPairXp = me.xp + (p ? p.xp : 0);
+
             const history = this.profile.used_dates || "";
             const shuffled = this.allDates.filter(d => !history.includes(d.n)).sort(() => 0.5 - Math.random()).slice(0, 3);
             document.getElementById('date-modal').style.display = 'block';
-            document.getElementById('date-list').innerHTML = shuffled.map(d => `<div class="date-option" onclick="app.selectDate('${d.n}', ${d.p})"><span>${d.n}</span><span class="gold-num" style="font-size:1rem;">${d.p} <div class="coin-icon"></div></span></div>`).join('');
+            document.getElementById('date-list').innerHTML = shuffled.map(d => {
+                const canAfford = totalPairXp >= d.p;
+                return `
+                    <div class="date-option" style="${canAfford ? '' : 'opacity: 0.4; pointer-events: none;'}" onclick="app.selectDate('${d.n}', ${d.p})">
+                        <span>${d.n} ${canAfford ? '' : '🔒 (Мало монет)'}</span>
+                        <span class="gold-num" style="font-size:1rem;">${d.p} <div class="coin-icon"></div></span>
+                    </div>
+                `;
+            }).join('');
         },
 
         async selectDate(name, price) {
-            if (this.profile.xp < price) { alert(`Недостаточно баллов!`); return; }
-            if(!confirm(`Выбираем "${name}"?`)) return;
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
+            const totalPairXp = me.xp + (p ? p.xp : 0);
+
+            if (totalPairXp < price) { alert(`Недостаточно общих баллов пары!`); return; }
+            if(!confirm(`Выбираем свидание "${name}" за ${price} 🪙?`)) return;
+
+            let myNewXp = me.xp;
+            let partnerNewXp = p ? p.xp : 0;
+
+            if (myNewXp >= price) {
+                myNewXp -= price;
+            } else {
+                const remainder = price - myNewXp;
+                myNewXp = 0;
+                partnerNewXp = Math.max(0, partnerNewXp - remainder);
+            }
+
             const nextWeek = (this.profile.current_week || 1) + 1;
             const newHistory = (this.profile.used_dates || "") + " | " + name;
             
-            await sb.from('profiles').update({ xp: 0, current_week: nextWeek, used_dates: newHistory }).eq('pair_code', this.profile.pair_code);
+            await sb.from('profiles').update({ xp: myNewXp, current_week: nextWeek, used_dates: newHistory }).eq('id', me.id);
+            if (p) {
+                await sb.from('profiles').update({ xp: partnerNewXp, current_week: nextWeek, used_dates: newHistory }).eq('id', p.id);
+            }
+
             location.reload();
         },
         logout() { localStorage.clear(); location.reload(); }
