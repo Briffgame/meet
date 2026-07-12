@@ -1,178 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <title>Кошелек Свиданий</title>
-    
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { 
-            background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; 
-            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; 
-            -webkit-tap-highlight-color: transparent; padding-bottom: 120px;
-            overflow-x: hidden;
-        }
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-
-        .container { width: 100%; max-width: 400px; }
-        
-        .pair-box { 
-            background: #1e1e1e; padding: 10px 15px; border-radius: 14px; 
-            display: inline-flex; align-items: center; gap: 10px; border: 1px solid #333; margin-bottom: 15px;
-        }
-        .pair-id-tag { font-size: 0.75rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-        .copy-btn { background: #333; border: none; color: #FFD700; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
-        .copy-btn:active { background: #444; }
-        
-        .gold-num { 
-            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-            font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; 
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); will-change: transform;
-        }
-        
-        .bump { transform: scale(1.3) !important; filter: brightness(1.3); }
-        .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
-        
-        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; position: relative; transition: border-color 0.3s; }
-        .stats-card.update-flash { border-color: #FFD700; }
-
-        .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
-        .progress-fill { height: 100%; width: 0%; transition: width 0.8s ease; }
-        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
-        .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
-
-        .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; }
-        
-        .btn-action { 
-            width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: transform 0.1s ease-out; touch-action: none; user-select: none; 
-            -webkit-user-select: none; -webkit-touch-callout: none;
-        }
-        .btn-action:active { transform: scale(0.85); }
-        .plus { background: #00d4ff; color: #121212; }
-        .minus { background: #2a2a2a; color: #666; }
-        .delete-btn { background: #ff0055; color: white; font-size: 1.2rem; width: 55px; height: 55px; border-radius: 18px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .delete-btn:active { transform: scale(0.85); }
-
-        /* Стили для Визарда и панели настроек */
-        .wizard-card { background: #1e1e1e; padding: 20px; border-radius: 22px; border: 1px solid #333; margin-bottom: 15px; }
-        .wizard-input { width: 100%; padding: 15px; background: #121212; border: 1px solid #333; color: white; border-radius: 14px; outline: none; margin-bottom: 15px; font-size: 1rem; }
-        .val-chips { display: flex; gap: 10px; margin-bottom: 20px; }
-        .chip { flex: 1; padding: 12px; background: #2a2a2a; text-align: center; border-radius: 12px; cursor: pointer; font-weight: bold; border: 2px solid transparent; color: #888; }
-        .chip.selected { border-color: #00d4ff; color: white; background: #333; }
-        .btn-ui { width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: linear-gradient(135deg, #00d4ff, #008fb3); color: #121212; }
-        .btn-secondary { background: #2a2a2a; color: white; margin-top: 10px; }
-        .wizard-item { display: flex; justify-content: space-between; background: #121212; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #222; font-size: 0.95rem; }
-
-        #shop-trigger-btn { width: 100%; background: #222; color: #444; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #333; font-size: 1.1rem; transition: all 0.4s ease; opacity: 0.6; }
-        #shop-trigger-btn.active { background: linear-gradient(135deg, #FFD700, #FFA500); color: #121212; border: none; opacity: 1; box-shadow: 0 10px 25px rgba(255,215,0,0.3); }
-        
-        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; backdrop-filter: blur(10px); }
-        .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
-
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
-        .manage-tasks-btn { background: none; border: 1px solid #444; color: #aaa; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
-        .manage-tasks-btn.active { border-color: #FFD700; color: #FFD700; background: rgba(255, 215, 0, 0.05); }
-    </style>
-</head>
-<body>
-
-<div id="loading-screen" style="margin-top:100px; display: flex; justify-content: center; width: 100%;">🪙 Синхронизация союза...</div>
-
-<!-- ЭКРАН НАСТРОЙКИ ЗАДАЧ (WIZARD) -->
-<div class="container" id="wizard-screen" style="display:none;">
-    <h2 style="text-align: center; color: #FFD700; margin-bottom: 5px;">НАСТРОЙКА ИГРЫ</h2>
-    <p style="text-align: center; color: #888; font-size: 0.9rem; margin-top: 0; margin-bottom: 25px;">Шаг 1: Добавьте домашние задачи вашей пары</p>
-    
-    <div class="wizard-card">
-        <input type="text" id="task-name-input" class="wizard-input" placeholder="Название задачи (например: Помыть посуду)">
-        <div style="color: #888; font-size: 0.85rem; margin-bottom: 8px; font-weight: bold;">ЦЕННОСТЬ В МОНЕТАХ:</div>
-        <div class="val-chips">
-            <div class="chip selected" onclick="app.selectChip(30, this)">30 🪙</div>
-            <div class="chip" onclick="app.selectChip(60, this)">60 🪙</div>
-            <div class="chip" onclick="app.selectChip(100, this)">100 🪙</div>
-        </div>
-        <button class="btn-ui btn-secondary" onclick="app.addWizardTask()">➕ ДОБАВИТЬ В СПИСОК</button>
-    </div>
-
-    <h3 style="margin-left: 5px; margin-bottom: 10px;">Ваш список задач:</h3>
-    <div id="wizard-tasks-list" style="margin-bottom: 25px;"></div>
-
-    <button class="btn-ui btn-primary" onclick="app.saveWizardTasks()">СОХРАНИТЬ И ДАЛЕЕ ➔</button>
-</div>
-
-<!-- ГЛАВНЫЙ ЭКРАН ИГРЫ -->
-<div class="container" id="game-screen" style="display:none;">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <div class="pair-box">
-            <div id="pair-display" class="pair-id-tag">КОД СОЮЗА: ......</div>
-            <button class="copy-btn" onclick="app.copyPairCode()">📋 СКОПИРОВАТЬ</button>
-        </div>
-        <h2 style="margin:0;">КОШЕЛЕК СВИДАНИЙ</h2>
-        <div id="week-tag" style="color: #666; font-size: 0.9rem; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
-        <div id="date-status" class="selected-date-status"></div>
-    </div>
-    
-    <div id="main-card" class="stats-card">
-        <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
-        <div style="display:flex; justify-content:space-between; align-items: flex-end;">
-            <span style="color:#888;">ВЫ</span>
-            <span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span>
-        </div>
-        <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
-        
-        <div style="display:flex; justify-content:space-between; align-items: flex-end; margin-top:20px;">
-            <span id="label-p" style="color:#888;">ПАРТНЕР</span>
-            <span id="v-p" class="gold-num" style="background:none;-webkit-text-fill-color:#ff007a;color:#ff007a;">0 <div class="coin-icon"></div></span>
-        </div>
-        <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
-    </div>
-
-    <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
-    
-    <!-- ЗАГОЛОВОК СПИСКА ЗАДАЧ С КНОПКОЙ НАСТРОЙКИ -->
-    <div class="section-header">
-        <h3 style="margin: 0;">СПИСОК ЗАДАЧ</h3>
-        <button id="edit-mode-btn" class="manage-tasks-btn" onclick="app.toggleEditMode()">⚙️ Настройка задач</button>
-    </div>
-
-    <!-- МИНИ-ФОРМА ДОБАВЛЕНИЯ В РЕЖИМЕ РЕДАКТИРОВАНИЯ -->
-    <div id="inline-task-form" class="wizard-card" style="display: none; border-color: #FFD700;">
-        <h4 style="margin-top: 0; margin-bottom: 10px; color: #FFD700;">➕ Добавить новую задачу:</h4>
-        <input type="text" id="inline-task-input" class="wizard-input" style="margin-bottom: 10px;" placeholder="Название (например: Вынести мусор)">
-        <div class="val-chips" style="margin-bottom: 15px;">
-            <div class="chip inline-chip selected" onclick="app.selectInlineChip(30, this)">30 🪙</div>
-            <div class="chip inline-chip" onclick="app.selectInlineChip(60, this)">60 🪙</div>
-            <div class="chip inline-chip" onclick="app.selectInlineChip(100, this)">100 🪙</div>
-        </div>
-        <button class="btn-ui btn-primary" style="padding: 12px;" onclick="app.addInlineTask()">Сохранить задачу в базу</button>
-    </div>
-
-    <div id="tasks"></div>
-    
-    <div style="text-align: center; margin-top: 30px;">
-        <button style="background:none; border:1px solid #333; color:#444; padding:10px 20px; border-radius:12px; font-size:0.8rem;" onclick="app.logout()">Выйти из пары</button>
-    </div>
-</div>
-
-<div id="date-modal">
-    <h2 style="color:#FFD700; text-align:center;">УДАЧА НЕДЕЛИ</h2>
-    <div id="date-list"></div>
-    <button onclick="document.getElementById('date-modal').style.display='none'" style="width:100%; background:none; border:1px solid #444; color:#666; padding:15px; border-radius:15px; margin-top:20px;">ЗАКРЫТЬ</button>
-</div>
-
 <script>
     const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
@@ -306,14 +131,12 @@
         async loadTasksFromDB() {
             const { data: dbTasks } = await sb.from('tasks').select('*').eq('pair_code', this.profile.pair_code);
             if (dbTasks) {
-                // Сохраняем и ID из базы данных, чтобы точно знать какую строку удалять
                 this.tasks = dbTasks.map(t => ({ id: t.id, n: t.text, x: t.difficulty }));
             } else {
                 this.tasks = [];
             }
         },
 
-        // --- ЛОГИКА ДЛЯ ЭКРАНА НАСТРОЙКИ (WIZARD) ---
         selectChip(val, el) {
             document.querySelectorAll('.chip:not(.inline-chip)').forEach(c => c.classList.remove('selected'));
             el.classList.add('selected');
@@ -362,7 +185,6 @@
             else { alert('Задачи союза успешно сохранены!'); location.reload(); }
         },
 
-        // --- РЕЖИМ РЕДАКТИРОВАНИЯ НА ГЛАВНОМ ЭКРАНЕ ---
         toggleEditMode() {
             this.isEditMode = !this.isEditMode;
             const btn = document.getElementById('edit-mode-btn');
@@ -391,7 +213,6 @@
             const name = input.value.trim();
             if (!name) { alert('Введите название новой задачи!'); return; }
 
-            // Мгновенная отправка одной новой задачи в Supabase
             const { error } = await sb.from('tasks').insert([{
                 pair_code: this.profile.pair_code,
                 text: name,
@@ -402,22 +223,25 @@
                 alert('Не удалось добавить задачу: ' + error.message);
             } else {
                 input.value = '';
-                // Списки сами обновятся благодаря Realtime подписке
+                // Принудительно перечитываем локально для мгновенной перерисовки
+                await this.loadTasksFromDB();
+                this.renderTasks();
             }
         },
 
         async deleteInlineTask(dbId) {
             if (!confirm('Вы действительно хотите полностью удалить эту задачу?')) return;
 
-            // Удаление строки из Supabase по ее уникальному ID
             const { error } = await sb.from('tasks').delete().eq('id', dbId);
             if (error) {
                 alert('Не удалось удалить задачу: ' + error.message);
+            } else {
+                // Принудительно перечитываем локально для мгновенной перерисовки
+                await this.loadTasksFromDB();
+                this.renderTasks();
             }
-            // Списки сами обновятся благодаря Realtime подписке
         },
 
-        // --- ЛОГИКА ГЛАВНОГО ЭКРАНА ИГРЫ ---
         renderTasks() { 
             const container = document.getElementById('tasks');
             if (this.tasks.length === 0) {
@@ -427,15 +251,14 @@
 
             container.innerHTML = this.tasks.map((t, index) => {
                 if (this.isEditMode) {
-                    // Вид карточки в режиме РЕДАКТИРОВАНИЯ (с корзиной)
+                    // Передаем t.id как строку в кавычках и вешаем вызов прямо на обычный click/onclick
                     return `
                         <div class="task-card" style="border-color: #444;">
                             <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
-                            <button class="delete-btn" onclick="app.deleteInlineTask(${t.id})">🗑️</button>
+                            <button class="delete-btn" onclick="app.deleteInlineTask('${t.id}')">🗑️</button>
                         </div>
                     `;
                 } else {
-                    // Вид карточки в обычном игровом режиме (+ и -)
                     return `
                         <div class="task-card">
                             <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
@@ -448,7 +271,7 @@
                 }
             }).join(''); 
 
-            // Навешиваем клики только если мы не в режиме редактирования
+            // Навешиваем touch-события ИСКЛЮЧИТЕЛЬНО на игровые кнопки + и -, чтобы они не блокировали остальной UI
             if (!this.isEditMode) {
                 this.tasks.forEach((t, index) => {
                     const btnMinus = document.getElementById(`btn-minus-${index}`);
@@ -547,5 +370,3 @@
     };
     app.init();
 </script>
-</body>
-</html>
