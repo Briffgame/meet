@@ -61,8 +61,10 @@
         .btn-action:active { transform: scale(0.85); }
         .plus { background: #00d4ff; color: #121212; }
         .minus { background: #2a2a2a; color: #666; }
+        .delete-btn { background: #ff0055; color: white; font-size: 1.2rem; width: 55px; height: 55px; border-radius: 18px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .delete-btn:active { transform: scale(0.85); }
 
-        /* Стили для Визарда настроек */
+        /* Стили для Визарда и панели настроек */
         .wizard-card { background: #1e1e1e; padding: 20px; border-radius: 22px; border: 1px solid #333; margin-bottom: 15px; }
         .wizard-input { width: 100%; padding: 15px; background: #121212; border: 1px solid #333; color: white; border-radius: 14px; outline: none; margin-bottom: 15px; font-size: 1rem; }
         .val-chips { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -79,6 +81,10 @@
         #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; backdrop-filter: blur(10px); }
         .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
+        .manage-tasks-btn { background: none; border: 1px solid #444; color: #aaa; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .manage-tasks-btn.active { border-color: #FFD700; color: #FFD700; background: rgba(255, 215, 0, 0.05); }
     </style>
 </head>
 <body>
@@ -135,6 +141,25 @@
     </div>
 
     <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
+    
+    <!-- ЗАГОЛОВОК СПИСКА ЗАДАЧ С КНОПКОЙ НАСТРОЙКИ -->
+    <div class="section-header">
+        <h3 style="margin: 0;">СПИСОК ЗАДАЧ</h3>
+        <button id="edit-mode-btn" class="manage-tasks-btn" onclick="app.toggleEditMode()">⚙️ Настройка задач</button>
+    </div>
+
+    <!-- МИНИ-ФОРМА ДОБАВЛЕНИЯ В РЕЖИМЕ РЕДАКТИРОВАНИЯ -->
+    <div id="inline-task-form" class="wizard-card" style="display: none; border-color: #FFD700;">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: #FFD700;">➕ Добавить новую задачу:</h4>
+        <input type="text" id="inline-task-input" class="wizard-input" style="margin-bottom: 10px;" placeholder="Название (например: Вынести мусор)">
+        <div class="val-chips" style="margin-bottom: 15px;">
+            <div class="chip inline-chip selected" onclick="app.selectInlineChip(30, this)">30 🪙</div>
+            <div class="chip inline-chip" onclick="app.selectInlineChip(60, this)">60 🪙</div>
+            <div class="chip inline-chip" onclick="app.selectInlineChip(100, this)">100 🪙</div>
+        </div>
+        <button class="btn-ui btn-primary" style="padding: 12px;" onclick="app.addInlineTask()">Сохранить задачу в базу</button>
+    </div>
+
     <div id="tasks"></div>
     
     <div style="text-align: center; margin-top: 30px;">
@@ -155,8 +180,8 @@
 
     const app = {
         user_id: null, profile: null, authMode: 'login',
-        wizardTasks: [], selectedValue: 30, // Переменные для Визарда
-        tasks: [], // Теперь список задач пустой, он будет качаться из базы
+        wizardTasks: [], selectedValue: 30, inlineSelectedValue: 30,
+        tasks: [], isEditMode: false,
         allDates: [{n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250}, {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500}, {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400}, {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Мини-трип", p:2000}, {n:"⛺ Пикник", p:800}, {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}],
 
         async init() {
@@ -200,7 +225,7 @@
                 this.authMode = 'login';
                 title.innerText = 'ВХОД В ПРИЛОЖЕНИЕ';
                 btn.innerText = 'ВОЙТИ';
-                toggle.innerText = 'Уся нет аккаунта? Зарегистрироваться';
+                toggle.innerText = 'У вас нет аккаунта? Зарегистрироваться';
                 nicknameInput.style.display = 'none';
                 codeInput.style.display = 'none';
             }
@@ -249,34 +274,48 @@
             this.profile = pr;
             document.getElementById('pair-display').innerText = `КОД СОЮЗА: ${pr.pair_code}`;
             
-            // Проверяем, есть ли уже задачи в базе для этой пары
-            const { data: dbTasks } = await sb.from('tasks').select('*').eq('pair_code', pr.pair_code);
+            await this.loadTasksFromDB();
             
             document.getElementById('loading-screen').style.display = 'none';
 
-            if (!dbTasks || dbTasks.length === 0) {
-                // Если задач в базе нет — включаем экран настройки (Визард)
+            if (this.tasks.length === 0) {
                 document.getElementById('wizard-screen').style.display = 'block';
                 this.renderWizardTasks();
             } else {
-                // Если задачи есть — сохраняем их и запускаем главный экран игры
-                this.tasks = dbTasks.map(t => ({ n: t.text, x: t.difficulty }));
                 document.getElementById('game-screen').style.display = 'block';
                 this.renderTasks(); 
                 await this.refresh();
             }
 
-            // Живая подписка на изменения
+            // Живая подписка на изменения профилей
             sb.channel('pair_channel')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `pair_code=eq.${this.profile.pair_code}` }, async () => {
                     await this.refresh();
                 })
                 .subscribe();
+
+            // Живая подписка на добавление/удаление задач другими устройствами
+            sb.channel('tasks_channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `pair_code=eq.${this.profile.pair_code}` }, async () => {
+                    await this.loadTasksFromDB();
+                    this.renderTasks();
+                })
+                .subscribe();
+        },
+
+        async loadTasksFromDB() {
+            const { data: dbTasks } = await sb.from('tasks').select('*').eq('pair_code', this.profile.pair_code);
+            if (dbTasks) {
+                // Сохраняем и ID из базы данных, чтобы точно знать какую строку удалять
+                this.tasks = dbTasks.map(t => ({ id: t.id, n: t.text, x: t.difficulty }));
+            } else {
+                this.tasks = [];
+            }
         },
 
         // --- ЛОГИКА ДЛЯ ЭКРАНА НАСТРОЙКИ (WIZARD) ---
         selectChip(val, el) {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.chip:not(.inline-chip)').forEach(c => c.classList.remove('selected'));
             el.classList.add('selected');
             this.selectedValue = val;
         },
@@ -312,7 +351,6 @@
             }
             document.getElementById('wizard-screen').innerHTML = `<div style="text-align:center; padding:40px;">🪙 Сохраняем задачи в базу союза...</div>`;
 
-            // Подготавливаем массив строк для отправки в базу данных Supabase
             const rowsToInsert = this.wizardTasks.map(t => ({
                 pair_code: this.profile.pair_code,
                 text: t.text,
@@ -320,44 +358,115 @@
             }));
 
             const { error } = await sb.from('tasks').insert(rowsToInsert);
+            if (error) { alert('Ошибка при сохранении: ' + error.message); location.reload(); } 
+            else { alert('Задачи союза успешно сохранены!'); location.reload(); }
+        },
+
+        // --- РЕЖИМ РЕДАКТИРОВАНИЯ НА ГЛАВНОМ ЭКРАНЕ ---
+        toggleEditMode() {
+            this.isEditMode = !this.isEditMode;
+            const btn = document.getElementById('edit-mode-btn');
+            const form = document.getElementById('inline-task-form');
             
-            if (error) {
-                alert('Ошибка при сохранении: ' + error.message);
-                location.reload();
+            if (this.isEditMode) {
+                btn.innerText = '✓ Выйти из настройки';
+                btn.classList.add('active');
+                form.style.display = 'block';
             } else {
-                alert('Задачи союза успешно сохранены!');
-                location.reload(); // Перезагружаем страницу, код определит, что задачи уже есть, и пустит в игру
+                btn.innerText = '⚙️ Настройка задач';
+                btn.classList.remove('active');
+                form.style.display = 'none';
             }
+            this.renderTasks();
+        },
+
+        selectInlineChip(val, el) {
+            document.querySelectorAll('.inline-chip').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            this.inlineSelectedValue = val;
+        },
+
+        async addInlineTask() {
+            const input = document.getElementById('inline-task-input');
+            const name = input.value.trim();
+            if (!name) { alert('Введите название новой задачи!'); return; }
+
+            // Мгновенная отправка одной новой задачи в Supabase
+            const { error } = await sb.from('tasks').insert([{
+                pair_code: this.profile.pair_code,
+                text: name,
+                difficulty: this.inlineSelectedValue
+            }]);
+
+            if (error) {
+                alert('Не удалось добавить задачу: ' + error.message);
+            } else {
+                input.value = '';
+                // Списки сами обновятся благодаря Realtime подписке
+            }
+        },
+
+        async deleteInlineTask(dbId) {
+            if (!confirm('Вы действительно хотите полностью удалить эту задачу?')) return;
+
+            // Удаление строки из Supabase по ее уникальному ID
+            const { error } = await sb.from('tasks').delete().eq('id', dbId);
+            if (error) {
+                alert('Не удалось удалить задачу: ' + error.message);
+            }
+            // Списки сами обновятся благодаря Realtime подписке
         },
 
         // --- ЛОГИКА ГЛАВНОГО ЭКРАНА ИГРЫ ---
         renderTasks() { 
             const container = document.getElementById('tasks');
-            container.innerHTML = this.tasks.map((t, index) => `
-                <div class="task-card">
-                    <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-action minus" id="btn-minus-${index}">−</button>
-                        <button class="btn-action plus" id="btn-plus-${index}">+</button>
-                    </div>
-                </div>
-            `).join(''); 
+            if (this.tasks.length === 0) {
+                container.innerHTML = `<div style="color:#666; text-align:center; padding:30px; font-style:italic;">Задач пока нет. Нажмите настройки, чтобы добавить.</div>`;
+                return;
+            }
 
-            this.tasks.forEach((t, index) => {
-                const btnMinus = document.getElementById(`btn-minus-${index}`);
-                const btnPlus = document.getElementById(`btn-plus-${index}`);
+            container.innerHTML = this.tasks.map((t, index) => {
+                if (this.isEditMode) {
+                    // Вид карточки в режиме РЕДАКТИРОВАНИЯ (с корзиной)
+                    return `
+                        <div class="task-card" style="border-color: #444;">
+                            <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
+                            <button class="delete-btn" onclick="app.deleteInlineTask(${t.id})">🗑️</button>
+                        </div>
+                    `;
+                } else {
+                    // Вид карточки в обычном игровом режиме (+ и -)
+                    return `
+                        <div class="task-card">
+                            <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-action minus" id="btn-minus-${index}">−</button>
+                                <button class="btn-action plus" id="btn-plus-${index}">+</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join(''); 
 
-                const handleTouch = (val, e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    app.doTask(val);
-                };
+            // Навешиваем клики только если мы не в режиме редактирования
+            if (!this.isEditMode) {
+                this.tasks.forEach((t, index) => {
+                    const btnMinus = document.getElementById(`btn-minus-${index}`);
+                    const btnPlus = document.getElementById(`btn-plus-${index}`);
+                    if (!btnMinus || !btnPlus) return;
 
-                btnMinus.addEventListener('touchstart', (e) => handleTouch(t.x * -1, e), { passive: false });
-                btnPlus.addEventListener('touchstart', (e) => handleTouch(t.x, e), { passive: false });
-                
-                btnMinus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x * -1); });
-                btnPlus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x); });
-            });
+                    const handleTouch = (val, e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        app.doTask(val);
+                    };
+
+                    btnMinus.addEventListener('touchstart', (e) => handleTouch(t.x * -1, e), { passive: false });
+                    btnPlus.addEventListener('touchstart', (e) => handleTouch(t.x, e), { passive: false });
+                    
+                    btnMinus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x * -1); });
+                    btnPlus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x); });
+                });
+            }
         },
 
         async doTask(val) {
