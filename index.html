@@ -327,9 +327,12 @@
                 })
                 .subscribe();
 
-            sb.channel('tasks_channel')
+        sb.channel('tasks_channel')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `pair_code=eq.${this.profile.pair_code}` }, async (payload) => {
+                    // 1. Скачиваем свежий список задач из базы
                     await this.loadTasksFromDB();
+                    
+                    // 2. Жёстко перерисовываем оба экрана у всех участников в реальном времени
                     if (this.profile.setup_done === false) {
                         this.renderWizardTasks();
                     } else {
