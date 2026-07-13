@@ -2,722 +2,667 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Briffgame</title>
-    <!-- Подключение Supabase -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>Кошелек Свиданий</title>
+    
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --accent: #38bdf8;
-            --accent-hover: #0ea5e9;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --success: #34d399;
-            --danger: #f87171;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        body { 
+            background: #121212; color: white; font-family: -apple-system, system-ui, sans-serif; 
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; 
+            -webkit-tap-highlight-color: transparent; padding-bottom: 120px;
             overflow-x: hidden;
         }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 
-        .screen {
-            display: none;
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-            flex-direction: column;
-            min-height: 100vh;
+        .container { width: 100%; max-width: 400px; }
+        
+        .pair-box { 
+            background: #1e1e1e; padding: 10px 15px; border-radius: 14px; 
+            display: inline-flex; align-items: center; gap: 10px; border: 1px solid #333; margin-bottom: 15px;
         }
+        .pair-id-tag { font-size: 0.75rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .copy-btn { background: #333; border: none; color: #FFD700; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
+        .copy-btn:active { background: #444; }
+        
+        .gold-num { 
+            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            font-weight: 800; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; 
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); will-change: transform;
+        }
+        
+        .bump { transform: scale(1.3) !important; filter: brightness(1.3); }
+        .coin-icon { width: 20px; height: 20px; background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B 80%); border-radius: 50%; border: 1px solid #DAA520; display: inline-block; }
+        
+        .stats-card { background: #1e1e1e; padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #333; width: 100%; position: relative; transition: border-color 0.3s; }
+        .stats-card.update-flash { border-color: #FFD700; }
 
-        .screen.active {
-            display: flex;
-        }
+        .lvl-badge { position: absolute; top: -10px; right: 15px; background: #FFD700; color: #121212; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .progress-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-top: 12px; }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.8s ease; }
+        .my-bar { background: linear-gradient(90deg, #00d4ff, #008fb3); }
+        .p-bar { background: linear-gradient(90deg, #ff007a, #b30056); }
 
-        h1, h2, h3 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: 600;
+        .task-card { background: #1e1e1e; padding: 18px; border-radius: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #2a2a2a; width: 100%; }
+        
+        .btn-action { 
+            width: 55px; height: 55px; border-radius: 18px; border: none; font-size: 1.8rem; font-weight: bold; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            transition: transform 0.1s ease-out; touch-action: none; user-select: none; 
+            -webkit-user-select: none; -webkit-touch-callout: none;
         }
+        .btn-action:active { transform: scale(0.85); }
+        .plus { background: #00d4ff; color: #121212; }
+        .minus { background: #2a2a2a; color: #666; }
+        .delete-btn { background: #ff0055; color: white; font-size: 1.2rem; width: 55px; height: 55px; border-radius: 18px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .delete-btn:active { transform: scale(0.85); }
 
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 30px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
+        .wizard-card { background: #1e1e1e; padding: 20px; border-radius: 22px; border: 1px solid #333; margin-bottom: 15px; }
+        .wizard-input { width: 100%; padding: 15px; background: #121212; border: 1px solid #333; color: white; border-radius: 14px; outline: none; margin-bottom: 15px; font-size: 1rem; }
+        .val-chips { display: flex; gap: 10px; margin-bottom: 20px; }
+        .chip { flex: 1; padding: 12px; background: #2a2a2a; text-align: center; border-radius: 12px; cursor: pointer; font-weight: bold; border: 2px solid transparent; color: #888; }
+        .chip.selected { border-color: #00d4ff; color: white; background: #333; }
+        .btn-ui { width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #00d4ff, #008fb3); color: #121212; }
+        .btn-secondary { background: #2a2a2a; color: white; margin-top: 10px; }
+        .wizard-item { display: flex; justify-content: space-between; align-items: center; background: #121212; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #222; font-size: 0.95rem; }
 
-        /* Поля ввода и кнопки */
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 14px;
-            background: var(--bg-card);
-            border: 1px solid #334155;
-            border-radius: 12px;
-            color: var(--text-main);
-            font-size: 1rem;
-            margin-bottom: 16px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
+        #shop-trigger-btn { width: 100%; background: #222; color: #444; padding: 18px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; border: 1px solid #333; font-size: 1.1rem; transition: all 0.4s ease; opacity: 0.6; }
+        #shop-trigger-btn.active { background: linear-gradient(135deg, #FFD700, #FFA500); color: #121212; border: none; opacity: 1; box-shadow: 0 10px 25px rgba(255,215,0,0.3); }
+        
+        #date-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; padding: 20px; backdrop-filter: blur(10px); }
+        .date-option { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .selected-date-status { color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
 
-        input[type="text"]:focus, input[type="number"]:focus {
-            border-color: var(--accent);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #0f172a;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-secondary {
-            background: #334155;
-            color: var(--text-main);
-            margin-top: 12px;
-        }
-
-        /* Экран авторизации */
-        #auth-screen {
-            justify-content: center;
-        }
-
-        /* Экран создания/входа в пару */
-        #pair-screen {
-            justify-content: center;
-        }
-        .code-display {
-            background: var(--bg-card);
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            letter-spacing: 2px;
-            color: var(--accent);
-            margin-bottom: 20px;
-            border: 1px dashed var(--accent);
-        }
-        .divider {
-            text-align: center;
-            color: var(--text-muted);
-            margin: 20px 0;
-            position: relative;
-        }
-
-        /* Экран визарда настроек */
-        .wizard-task-item {
-            background: var(--bg-card);
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.3s ease;
-        }
-        .wizard-task-item span {
-            font-size: 0.95rem;
-        }
-        .wizard-task-item button {
-            width: auto;
-            padding: 6px 10px;
-            background: rgba(248, 113, 113, 0.2);
-            color: var(--danger);
-            border-radius: 6px;
-            font-size: 0.85rem;
-        }
-
-        /* Главный экран игры */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent);
-            color: #0f172a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .score-board {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .score-card {
-            background: var(--bg-card);
-            padding: 16px;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid #334155;
-        }
-
-        .score-card.me {
-            border-color: rgba(56, 189, 248, 0.4);
-        }
-
-        .score-card .name {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .score-card .coins {
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: #f59e0b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        /* Списки задач */
-        .tasks-container {
-            flex: 1;
-        }
-
-        .task-card {
-            background: var(--bg-card);
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-
-        .task-info {
-            flex: 1;
-            padding-right: 12px;
-        }
-
-        .task-text {
-            font-size: 1rem;
-            margin-bottom: 6px;
-            line-height: 1.3;
-        }
-
-        .task-cost {
-            font-size: 0.85rem;
-            color: #f59e0b;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .btn-done {
-            width: auto;
-            padding: 10px 16px;
-            background: var(--success);
-            color: #0f172a;
-            border-radius: 10px;
-        }
-
-        .btn-delete-inline {
-            width: auto;
-            padding: 10px;
-            background: rgba(248, 113, 113, 0.15);
-            color: var(--danger);
-            border-radius: 10px;
-        }
-
-        .controls {
-            margin-top: 20px;
-            padding-top: 10px;
-        }
-
-        .btn-edit-mode {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: var(--text-muted);
-        }
-        .btn-edit-mode.active {
-            background: rgba(52, 211, 153, 0.15);
-            border-color: var(--success);
-            color: var(--success);
-        }
-
-        #inline-task-form {
-            background: #1e293b;
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 16px;
-            border: 1px dashed #475569;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
+        .manage-tasks-btn { background: none; border: 1px solid #444; color: #aaa; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .manage-tasks-btn.active { border-color: #FFD700; color: #FFD700; background: rgba(255, 215, 0, 0.05); }
     </style>
 </head>
 <body>
 
-    <!-- 1. ЭКРАН АВТОРИЗАЦИИ -->
-    <div id="auth-screen" class="screen active">
-        <h1>Добро пожаловать</h1>
-        <p class="subtitle">Введите ваше имя для входа в приложение</p>
-        <input type="text" id="username-input" placeholder="Ваше имя">
-        <button class="btn-primary" onclick="app.handleAuth()">Войти</button>
+<div id="loading-screen" style="margin-top:100px; display: flex; justify-content: center; width: 100%;">🪙 Синхронизация союза...</div>
+
+<div class="container" id="wizard-screen" style="display:none;">
+    <h2 style="text-align: center; color: #FFD700; margin-bottom: 5px;">НАСТРОЙКА ИГРЫ</h2>
+    <p style="text-align: center; color: #888; font-size: 0.9rem; margin-top: 0; margin-bottom: 25px;">Шаг 1: Добавьте или скорректируйте домашние задачи вашей пары</p>
+    
+    <div class="wizard-card">
+        <input type="text" id="task-name-input" class="wizard-input" placeholder="Название задачи (например: Помыть посуду)">
+        <div style="color: #888; font-size: 0.85rem; margin-bottom: 8px; font-weight: bold;">ЦЕННОСТЬ В МОНЕТАХ:</div>
+        <div class="val-chips">
+            <div class="chip selected" onclick="app.selectChip(30, this)">30 🪙</div>
+            <div class="chip" onclick="app.selectChip(60, this)">60 🪙</div>
+            <div class="chip" onclick="app.selectChip(100, this)">100 🪙</div>
+        </div>
+        <button class="btn-ui btn-secondary" onclick="app.addWizardTask()">➕ ДОБАВИТЬ В СПИСОК</button>
     </div>
 
-    <!-- 2. ЭКРАН ВЫБОРА / СОЗДАНИЯ ПАРЫ -->
-    <div id="pair-screen" class="screen">
-        <h1>Создание союза</h1>
-        <p class="subtitle">Вы можете создать новый уникальный код союза или ввести код, который вам прислал ваш партнер.</p>
+    <h3 style="margin-left: 5px; margin-bottom: 10px;">Общий список задач пары:</h3>
+    <div id="wizard-tasks-list" style="margin-bottom: 25px;"></div>
+
+    <button class="btn-ui btn-primary" onclick="app.saveWizardTasks()">СОХРАНИТЬ И ИГРАТЬ ➔</button>
+</div>
+
+<div class="container" id="game-screen" style="display:none;">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <div class="pair-box">
+            <div id="pair-display" class="pair-id-tag">КОД СОЮЗА: ......</div>
+            <button class="copy-btn" onclick="app.copyPairCode()">📋 СКОПИРОВАТЬ</button>
+        </div>
+        <h2 style="margin:0;">КОШЕЛЕК СВИДАНИЙ</h2>
+        <div id="week-tag" style="color: #666; font-size: 0.9rem; font-weight: bold;">НЕДЕЛЯ 1 / 4</div>
+        <div id="date-status" class="selected-date-status"></div>
+    </div>
+    
+    <div id="main-card" class="stats-card">
+        <div id="lvl-badge" class="lvl-badge">НОВИЧКИ</div>
+        <div style="display:flex; justify-content:space-between; align-items: flex-end;">
+            <span style="color:#888;">ВЫ</span>
+            <span id="v-my" class="gold-num">0 <div class="coin-icon"></div></span>
+        </div>
+        <div class="progress-bar"><div id="f-my" class="progress-fill my-bar"></div></div>
         
-        <button class="btn-primary" onclick="app.generatePairCode()">✨ Создать новый код</button>
-        <div id="generated-code-block" style="display:none; margin-top:15px;">
-            <p style="text-align:center; font-size:0.9rem; color:var(--text-muted); margin-bottom:5px;">Отправьте этот код партнеру:</p>
-            <div class="code-display" id="share-code-value">------</div>
-            <button class="btn-secondary" onclick="app.checkPairConnection()">🔄 Я отправил, проверить подключение</button>
+        <div style="display:flex; justify-content:space-between; align-items: flex-end; margin-top:20px;">
+            <span id="label-p" style="color:#888;">ПАРТНЕР</span>
+            <span id="v-p" class="gold-num" style="background:none;-webkit-text-fill-color:#ff007a;color:#ff007a;">0 <div class="coin-icon"></div></span>
         </div>
-
-        <div class="divider">ИЛИ</div>
-
-        <input type="text" id="join-code-input" placeholder="Ввести код партнера" style="text-align:center; font-weight:bold; letter-spacing:1px;">
-        <button class="btn-primary" style="background:#6366f1; color:white;" onclick="app.joinPairCode()">🔗 Подключиться по коду</button>
+        <div class="progress-bar"><div id="f-p" class="progress-fill p-bar"></div></div>
     </div>
 
-    <!-- 3. ЭКРАН ВИЗАРДА (СТАРТОВАЯ НАСТРОЙКА ЗАДАЧ) -->
-    <div id="wizard-screen" class="screen">
-        <h1>Настройка задач</h1>
-        <p class="subtitle">Создайте стартовый список задач для вашей пары. Вы можете добавлять свои и будете видеть задачи, которые параллельно вносит ваш партнер.</p>
+    <button id="shop-trigger-btn" disabled onclick="app.openDateSelection()">МАГАЗИН СВИДАНИЙ 🥂</button>
+    
+    <div class="section-header">
+        <h3 style="margin: 0;">СПИСОК ЗАДАЧ</h3>
+        <button id="edit-mode-btn" class="manage-tasks-btn" onclick="app.toggleEditMode()">⚙️ Настройка задач</button>
+    </div>
+
+    <div id="inline-task-form" class="wizard-card" style="display: none; border-color: #FFD700;">
+        <button class="btn-ui" id="debug-shop-btn" style="background: #333; color: #FFD700; border: 1px solid #FFD700; padding: 10px; margin-bottom: 20px; font-size: 0.85rem;" onclick="app.toggleDebugShop()">🔓 Тест: Открыть магазин (Вкл/Выкл)</button>
         
-        <div style="background: var(--bg-card); padding: 16px; border-radius: 14px; margin-bottom: 20px;">
-            <input type="text" id="wizard-task-text" placeholder="Название задачи (например: Помыть посуду)" style="margin-bottom:10px;">
-            <input type="number" id="wizard-task-difficulty" placeholder="Сложность (баллы от 10 до 100)" min="10" max="100">
-            <button class="btn-primary" onclick="app.addWizardTask()">Добавить задачу</button>
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: #FFD700;">➕ Добавить новую задачу:</h4>
+        <input type="text" id="inline-task-input" class="wizard-input" style="margin-bottom: 10px;" placeholder="Название (например: Вынести мусор)">
+        <div class="val-chips" style="margin-bottom: 15px;">
+            <div class="chip inline-chip selected" onclick="app.selectInlineChip(30, this)">30 🪙</div>
+            <div class="chip inline-chip" onclick="app.selectInlineChip(60, this)">60 🪙</div>
+            <div class="chip inline-chip" onclick="app.selectInlineChip(100, this)">100 🪙</div>
         </div>
-
-        <h3 style="text-align:left; font-size:1.1rem; margin-bottom:10px;">Текущий список задач союза:</h3>
-        <div id="wizard-tasks-list" style="flex:1; margin-bottom:20px;">
-            <!-- Сюда рендерятся задачи динамически -->
-        </div>
-
-        <button class="btn-primary" style="background:var(--success); color:#0f172a;" onclick="app.finishWizard()">Сохранить и начать игру! 🚀</button>
+        <button class="btn-ui btn-primary" style="padding: 12px;" onclick="app.addInlineTask()">Сохранить задачу в базу</button>
     </div>
 
-    <!-- 4. ГЛАВНЫЙ ЭКРАН ИГРЫ -->
-    <div id="main-screen" class="screen">
-        <div class="header">
-            <div class="user-info">
-                <div class="avatar" id="user-avatar">?</div>
-                <div id="user-name-display" style="font-weight:600;">Игрок</div>
-            </div>
-            <button onclick="app.logout()" style="width:auto; padding:8px 12px; background:transparent; color:var(--text-muted); font-size:0.9rem;">Выйти</button>
-        </div>
-
-        <div class="score-board">
-            <div class="score-card me">
-                <div class="name" id="my-name">Вы</div>
-                <div class="coins">🪙 <span id="my-coins">0</span></div>
-            </div>
-            <div class="score-card">
-                <div class="name" id="partner-name">Партнер</div>
-                <div class="coins">🪙 <span id="partner-coins">0</span></div>
-            </div>
-        </div>
-
-        <!-- Форма добавления задач внутри игры (по умолчанию скрыта) -->
-        <div id="inline-task-form" style="display: none;">
-            <h3 style="font-size:1rem; margin-bottom:12px; text-align:left;">Новая задача</h3>
-            <input type="text" id="inline-task-text" placeholder="Что нужно сделать?" style="padding:10px; font-size:0.9rem; margin-bottom:10px;">
-            <input type="number" id="inline-task-difficulty" placeholder="Баллы" style="padding:10px; font-size:0.9rem; margin-bottom:10px;">
-            <button class="btn-primary" onclick="app.addInlineTask()" style="padding:10px; font-size:0.9rem;">Добавить</button>
-        </div>
-
-        <div class="tasks-container" id="tasks-list">
-            <!-- Задачи загружаются из базы -->
-        </div>
-
-        <div class="controls">
-            <button id="edit-mode-btn" class="btn-edit-mode" onclick="app.toggleEditMode()">⚙️ Настройка задач</button>
-        </div>
+    <div id="tasks"></div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <button style="background:none; border:1px solid #333; color:#444; padding:10px 20px; border-radius:12px; font-size:0.8rem;" onclick="app.logout()">Выйти из пары</button>
     </div>
+</div>
 
-    <script>
-        // Инициализация Supabase. Данные подключения зашиты в платформу PRODUCTION.
-        const supabaseUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? '' : window.location.origin;
-        const sb = supabase.createClient(supabaseUrl, "");
+<div id="date-modal">
+    <h2 style="color:#FFD700; text-align:center;">УДАЧА НЕДЕЛИ</h2>
+    <div id="date-list"></div>
+    <button onclick="document.getElementById('date-modal').style.display='none'" style="width:100%; background:none; border:1px solid #444; color:#666; padding:15px; border-radius:15px; margin-top:20px;">ЗАКРЫТЬ</button>
+</div>
 
-        class BriffGame {
-            constructor() {
-                this.user_id = null;
-                this.profile = null;
-                this.tasks = [];
-                this.isEditMode = false;
+<script>
+    const SUPABASE_URL = 'https://bndqlyigisgbwqaujtys.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_LDcqX8mk4Mn6gFihWPZ6eg_DzW9xWlN';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const app = {
+        user_id: null, profile: null, authMode: 'login',
+        wizardTasks: [], selectedValue: 30, inlineSelectedValue: 30,
+        tasks: [], isEditMode: false, isDebugShopOpen: false,
+        allDates: [{n:"🍦 Прогулка", p:150}, {n:"🍿 Кино", p:300}, {n:"🧩 Сборка пазла", p:200}, {n:"🧘 Совместная йога", p:250}, {n:"🍝 Ресторан", p:600}, {n:"🍷 Вино и Домино", p:400}, {n:"🎮 Турнир в приставку", p:350}, {n:"🎨 Рисование вином", p:500}, {n:"🎤 Караоке", p:450}, {n:"🛀 СПА дома", p:700}, {n:"🎭 Театр или Стендап", p:900}, {n:"⛸️ Каток или Ролики", p:400}, {n:"🍕 Мастер-класс", p:750}, {n:"📸 Фотосессия", p:1000}, {n:"🚗 Mini-трип", p:2000}, {n:"⛺ Пикник", p:800}, {n:"🏰 Музей/Выставка", p:550}, {n:"🍳 Завтрак в постель", p:1200}, {n:"🎱 Бильярд", p:400}, {n:"🤫 Секретное свидание", p:2500}],
+
+        async init() {
+            const savedId = localStorage.getItem('briff_user_id');
+            if (!savedId) return this.askLogin();
+            
+            this.user_id = savedId;
+            await this.start();
+        },
+
+        askLogin() {
+            this.authMode = 'login';
+            document.getElementById('loading-screen').innerHTML = `
+                <div style="width: 100%; max-width: 300px; text-align: center; margin: 0 auto;">
+                    <h2 id="auth-title" style="margin-bottom: 20px; color: #FFD700;">ВХОД В ПРИЛОЖЕНИЕ</h2>
+                    <input type="email" id="e_in" placeholder="Ваш Email" style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none;">
+                    <input type="password" id="p_in" placeholder="Пароль" style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none;">
+                    <input type="text" id="n_in" placeholder="Ваше Имя / Никнейм" style="width:100%; padding:18px; margin-bottom:12px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none; display:none;">
+                    <input type="text" id="code_in" placeholder="6-значный код партнера" inputmode="numeric" pattern="[0-9]*" maxlength="6" style="width:100%; padding:18px; margin-bottom:20px; background:#1e1e1e; border:1px solid #333; color:white; border-radius:18px; outline:none; display:none;">
+                    <button id="auth-btn" onclick="app.handleAuth()" style="width:100%; padding:18px; background:linear-gradient(135deg, #00d4ff, #008fb3); border:none; color:#121212; font-weight:bold; border-radius:18px; font-size:1rem; cursor:pointer; margin-bottom: 15px;">ВОЙТИ</button>
+                    <div id="auth-toggle" style="color: #666; cursor: pointer; font-size: 0.9rem; text-decoration: underline;" onclick="app.toggleAuthMode()">У вас нет аккаунта? Зарегистрироваться</div>
+                </div>
+            `;
+        },
+
+        toggleAuthMode() {
+            const title = document.getElementById('auth-title');
+            const btn = document.getElementById('auth-btn');
+            const toggle = document.getElementById('auth-toggle');
+            const nicknameInput = document.getElementById('n_in');
+            const codeInput = document.getElementById('code_in');
+
+            if (this.authMode === 'login') {
+                this.authMode = 'register';
+                title.innerText = 'РЕГИСТРАЦИЯ ПАРЫ';
+                btn.innerText = 'СОЗДАТЬ АККАУНТ';
+                toggle.innerText = 'Уже есть аккаунт? Войти по Email';
+                nicknameInput.style.display = 'block';
+                codeInput.style.display = 'block';
+            } else {
+                this.authMode = 'login';
+                title.innerText = 'ВХОД В ПРИЛОЖЕНИЕ';
+                btn.innerText = 'ВОЙТИ';
+                toggle.innerText = 'У вас нет аккаунта? Зарегистрироваться';
+                nicknameInput.style.display = 'none';
+                codeInput.style.display = 'none';
             }
+        },
 
-            async init() {
-                this.user_id = localStorage.getItem('bg_user_id');
-                if (this.user_id) {
-                    await this.loadProfile();
-                } else {
-                    this.showScreen('auth-screen');
+        async handleAuth() {
+            const email = document.getElementById('e_in').value.trim().toLowerCase();
+            const password = document.getElementById('p_in').value;
+            const nickname = document.getElementById('n_in').value.trim();
+            const code = document.getElementById('code_in').value.trim();
+
+            if (!email || !password) { 
+                alert('Заполните Email и Пароль!'); 
+                return; 
+            }
+            document.getElementById('loading-screen').innerHTML = '🪙 Обработка...';
+
+            if (this.authMode === 'login') {
+                const { data, error: authError } = await sb.auth.signInWithPassword({ email: email, password: password });
+                if (authError) { 
+                    alert('Ошибка входа: ' + authError.message); 
+                    this.askLogin(); 
+                    return; 
                 }
-            }
-
-            showScreen(screenId) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(screenId).classList.add('active');
-            }
-
-            async handleAuth() {
-                const name = document.getElementById('username-input').value.trim();
-                if (!name) return alert('Введите имя');
-
-                const { data, error } = await sb.from('profiles').insert([{ nickname: name }]).select();
-                if (error) return alert('Ошибка регистрации: ' + error.message);
-
-                this.user_id = data[0].id;
-                localStorage.setItem('bg_user_id', this.user_id);
-                await this.loadProfile();
-            }
-
-            async loadProfile() {
-                const { data, error } = await sb.from('profiles').select('*').eq('id', this.user_id).single();
-                if (error || !data) {
-                    this.logout();
-                    return;
+                if (data?.user) { 
+                    localStorage.setItem('briff_user_id', data.user.id); 
+                    location.reload(); 
                 }
-                this.profile = data;
-
-                if (!this.profile.pair_code) {
-                    this.showScreen('pair-screen');
-                } else if (this.profile.setup_done === false) {
-                    this.showScreen('wizard-screen');
-                    await this.loadTasksFromDB();
-                    this.renderWizardTasks();
-                    this.start(); // Запускаем реалтайм каналы на этапе визарда
-                } else {
-                    this.showScreen('main-screen');
-                    await this.loadTasksFromDB();
-                    this.renderTasks();
-                    this.start(); // Запускаем реалтайм каналы для игры
+            } else {
+                if (!nickname) { 
+                    alert('Введите ваше Имя / Никнейм!'); 
+                    this.askLogin(); 
+                    return; 
                 }
-            }
-
-            async generatePairCode() {
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
-                const { error } = await sb.from('profiles').update({ pair_code: code }).eq('id', this.user_id);
-                if (error) return alert('Ошибка генерации: ' + error.message);
-
-                this.profile.pair_code = code;
-                document.getElementById('share-code-value').innerText = code;
-                document.getElementById('generated-code-block').style.display = 'block';
-            }
-
-            async checkPairConnection() {
-                const { data, error } = await sb.from('profiles')
-                    .select('id')
-                    .eq('pair_code', this.profile.pair_code);
                 
-                if (data && data.length >= 2) {
-                    alert('Партнер успешно подключился!');
-                    await this.loadProfile();
-                } else {
-                    alert('Партнер еще не подключился по коду.');
+                const { data: signUpData, error: authError } = await sb.auth.signUp({ email: email, password: password });
+                if (authError) { 
+                    alert('Ошибка создания аккаунта: ' + authError.message); 
+                    this.askLogin(); 
+                    return; 
+                }
+
+                if (signUpData?.user) {
+                    let finalPairCode = code;
+                    
+                    if (!finalPairCode || finalPairCode.length !== 6) {
+                        finalPairCode = String(Math.floor(100000 + Math.random() * 900000));
+                        alert(`Пара успешно создана!\n\nВаш КОД СОЮЗА: ${finalPairCode}`);
+                    }
+                    
+                    const { error: dbError } = await sb.from('profiles').insert([{ 
+                        id: signUpData.user.id, 
+                        nickname: nickname, 
+                        pair_code: finalPairCode, 
+                        xp: 0, 
+                        current_week: 1, 
+                        used_dates: "",
+                        setup_done: false 
+                    }]);
+
+                    if (dbError) {
+                        alert('Ошибка создания профиля: ' + dbError.message);
+                        this.askLogin();
+                        return;
+                    }
+                    
+                    const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email: email, password: password });
+                    
+                    if (signInError) {
+                        alert('Аккаунт создан, но не удалось войти автоматически. Пожалуйста, войдите через форму входа.');
+                        location.reload();
+                    } else if (signInData?.user) {
+                        localStorage.setItem('briff_user_id', signInData.user.id);
+                        location.reload();
+                    }
                 }
             }
+        },
 
-            async joinPairCode() {
-                const code = document.getElementById('join-code-input').value.trim();
-                if (!code) return alert('Введите код');
+        async start() {
+            const { data: pr, error } = await sb.from('profiles').select('*').eq('id', this.user_id).maybeSingle();
+            if (!pr || error) { this.logout(); return; }
+            
+            this.profile = pr;
+            document.getElementById('pair-display').innerText = `КОД СОЮЗА: ${pr.pair_code}`;
+            
+            await this.loadTasksFromDB();
+            document.getElementById('loading-screen').style.display = 'none';
 
-                const { data: owners, error: checkErr } = await sb.from('profiles').select('id').eq('pair_code', code);
-                if (checkErr || !owners || owners.length === 0) return alert('Код не найден');
-
-                const { error } = await sb.from('profiles').update({ pair_code: code }).eq('id', this.user_id);
-                if (error) return alert('Ошибка подключения: ' + error.message);
-
-                await this.loadProfile();
+            if (this.profile.setup_done === false) {
+                document.getElementById('wizard-screen').style.display = 'block';
+                this.renderWizardTasks();
+            } else {
+                document.getElementById('game-screen').style.display = 'block';
+                this.renderTasks(); 
+                await this.refresh();
             }
 
-            async loadTasksFromDB() {
-                if (!this.profile.pair_code) return;
-                const { data } = await sb.from('tasks')
-                    .select('*')
-                    .eq('pair_code', this.profile.pair_code)
-                    .order('created_at', { ascending: false });
-                this.tasks = data || [];
+            // Слушаем изменения баланса монет и статусов в profiles
+            sb.channel('pair_channel')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `pair_code=eq.${this.profile.pair_code}` }, async () => {
+                    await this.refresh();
+                })
+                .subscribe();
+
+            // КРИТИЧЕСКИЙ БЛОК: Слушаем специальное событие Broadcast принудительного обновления задач
+            sb.channel('pair_tasks_sync')
+                .on('broadcast', { event: 'tasks-updated' }, async () => {
+                    await this.loadTasksFromDB();
+                    if (this.profile.setup_done === false) {
+                        this.renderWizardTasks();
+                    } else {
+                        this.renderTasks();
+                    }
+                })
+                .subscribe();
+        },
+
+        async loadTasksFromDB() {
+            const { data: dbTasks } = await sb.from('tasks').select('*').eq('pair_code', this.profile.pair_code);
+            if (dbTasks) {
+                this.tasks = dbTasks.map(t => ({ id: t.id, n: t.text, x: t.difficulty }));
+            } else {
+                this.tasks = [];
             }
+        },
 
-            // Рендер задач на экране мастера настроек (Wizard)
-            renderWizardTasks() {
-                const container = document.getElementById('wizard-tasks-list');
-                container.innerHTML = '';
-                if (this.tasks.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:0.9rem; margin-top:10px;">Задач пока нет. Добавьте первую!</p>';
-                    return;
-                }
-                this.tasks.forEach(t => {
-                    const div = document.createElement('div');
-                    div.className = 'wizard-task-item';
-                    div.innerHTML = `
-                        <span>${t.text} <b>(${t.difficulty} 🪙)</b></span>
-                        <button onclick="app.deleteTask('${t.id}')">Удалить</button>
-                    `;
-                    container.appendChild(div);
-                });
-            }
+        selectChip(val, el) {
+            document.querySelectorAll('.chip:not(.inline-chip)').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            this.selectedValue = val;
+        },
 
-            async addWizardTask() {
-                const textInput = document.getElementById('wizard-task-text');
-                const diffInput = document.getElementById('wizard-task-difficulty');
-                const text = textInput.value.trim();
-                const difficulty = parseInt(diffInput.value);
+        async addWizardTask() {
+            const input = document.getElementById('task-name-input');
+            const name = input.value.trim();
+            if (!name) { alert('Введите название задачи!'); return; }
+            
+            const { error } = await sb.from('tasks').insert([{
+                pair_code: this.profile.pair_code,
+                text: name,
+                difficulty: this.selectedValue
+            }]);
 
-                if (!text || isNaN(difficulty)) return alert('Заполните поля корректно');
-
-                await sb.from('tasks').insert([{
-                    pair_code: this.profile.pair_code,
-                    text: text,
-                    difficulty: difficulty
-                }]);
-
-                textInput.value = '';
-                diffInput.value = '';
+            if (error) {
+                alert('Ошибка добавления: ' + error.message);
+            } else {
+                input.value = '';
                 await this.loadTasksFromDB();
                 this.renderWizardTasks();
             }
+        },
 
-            async finishWizard() {
-                if (this.tasks.length === 0) {
-                    return alert('Добавьте хотя бы одну задачу перед началом игры!');
-                }
-                const { error } = await sb.from('profiles').update({ setup_done: true }).eq('id', this.user_id);
-                if (error) return alert('Ошибка сохранения: ' + error.message);
-                
-                await this.loadProfile();
+        async deleteWizardTask(dbId) {
+            const { error } = await sb.from('tasks').delete().eq('id', dbId);
+            if (!error) {
+                await this.loadTasksFromDB();
+                this.renderWizardTasks();
             }
+        },
 
-            // Рендер задач на главном игровом поле
-            renderTasks() {
-                const container = document.getElementById('tasks-list');
-                container.innerHTML = '';
+        renderWizardTasks() {
+            const container = document.getElementById('wizard-tasks-list');
+            if (this.tasks.length === 0) {
+                container.innerHTML = `<div style="color:#666; font-style:italic; text-align:center; padding:10px;">Список пуст. Добавьте первую задачу союза.</div>`;
+                return;
+            }
+            container.innerHTML = this.tasks.map((t) => `
+                <div class="wizard-item">
+                    <div>
+                        <span><b>${t.n}</b></span><br>
+                        <span style="color:#FFD700; font-size:0.85rem; font-weight:bold;">+${t.x} 🪙</span>
+                    </div>
+                    <button style="background:none; border:none; color:#ff0055; font-size:1.1rem; cursor:pointer;" onclick="app.deleteWizardTask('${t.id}')">🗑️</button>
+                </div>
+            `).join('');
+        },
 
-                if (this.tasks.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">Список задач пуст.</p>';
-                    return;
-                }
+        async saveWizardTasks() {
+            if (this.tasks.length === 0) {
+                alert('Добавьте хотя бы одну задачу для союза перед началом игры!');
+                return;
+            }
+            
+            const { error } = await sb.from('profiles').update({ setup_done: true }).eq('id', this.user_id);
+            if (error) {
+                alert('Ошибка сохранения статуса: ' + error.message);
+            } else {
+                location.reload();
+            }
+        },
 
-                this.tasks.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = 'task-card';
-
-                    let actionButton = `<button class="btn-done" onclick="app.completeTask('${t.id}', ${t.difficulty})">Выполнено</button>`;
-                    if (this.isEditMode) {
-                        actionButton = `<button class="btn-delete-inline" onclick="app.deleteTask('${t.id}')">❌</button>`;
-                    }
-
-                    card.innerHTML = `
-                        <div class="task-info">
-                            <div class="task-text">${t.text}</div>
-                            <div class="task-cost">🪙 ${t.difficulty} баллов</div>
-                        </div>
-                        ${actionButton}
-                    `;
-                    container.appendChild(card);
+        async toggleEditMode() {
+            this.isEditMode = !this.isEditMode;
+            const btn = document.getElementById('edit-mode-btn');
+            const form = document.getElementById('inline-task-form');
+            
+            if (this.isEditMode) {
+                btn.innerText = '✓ Выйти из настройки';
+                btn.classList.add('active');
+                form.style.display = 'block';
+            } else {
+                btn.innerText = '⚙️ Настройка задач';
+                btn.classList.remove('active');
+                form.style.display = 'none';
+                
+                // КРИТИЧЕСКИЙ МОМЕНТ: При выходе из настроек отправляем Broadcast-импульс партнеру
+                await sb.channel('pair_tasks_sync').send({
+                    type: 'broadcast',
+                    event: 'tasks-updated',
+                    payload: {}
                 });
             }
+            this.renderTasks();
+        },
 
-            // Переключение режима редактирования внутри игры
-            async toggleEditMode() {
-                this.isEditMode = !this.isEditMode;
-                const btn = document.getElementById('edit-mode-btn');
-                const form = document.getElementById('inline-task-form');
-                
+        toggleDebugShop() {
+            this.isDebugShopOpen = !this.isDebugShopOpen;
+            const btn = document.getElementById('debug-shop-btn');
+            if (this.isDebugShopOpen) {
+                btn.style.background = '#FFD700';
+                btn.style.color = '#121212';
+                btn.innerText = '🔒 Выключить обход времени';
+            } else {
+                btn.style.background = '#333';
+                btn.style.color = '#FFD700';
+                btn.innerText = '🔓 Тест: Открыть магазин (Вкл/Выкл)';
+            }
+            this.refresh();
+        },
+
+        selectInlineChip(val, el) {
+            document.querySelectorAll('.inline-chip').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            this.inlineSelectedValue = val;
+        },
+
+        async addInlineTask() {
+            const input = document.getElementById('inline-task-input');
+            const name = input.value.trim();
+            if (!name) { alert('Введите название новой задачи!'); return; }
+
+            const { error } = await sb.from('tasks').insert([{
+                pair_code: this.profile.pair_code,
+                text: name,
+                difficulty: this.inlineSelectedValue
+            }]);
+
+            if (error) {
+                alert('Не удалось добавить задачу: ' + error.message);
+            } else {
+                input.value = '';
+                await this.loadTasksFromDB();
+                this.renderTasks();
+            }
+        },
+
+        async deleteInlineTask(dbId) {
+            if (!confirm('Вы действительно хотите полностью удалить эту задачу?')) return;
+
+            const { error } = await sb.from('tasks').delete().eq('id', dbId);
+            if (error) {
+                alert('Не удалось удалить задачу: ' + error.message);
+            } else {
+                await this.loadTasksFromDB();
+                this.renderTasks();
+            }
+        },
+
+        renderTasks() { 
+            const container = document.getElementById('tasks');
+            if (this.tasks.length === 0) {
+                container.innerHTML = `<div style="color:#666; text-align:center; padding:30px; font-style:italic;">Задач пока нет. Нажмите настройки, чтобы добавить.</div>`;
+                return;
+            }
+
+            container.innerHTML = this.tasks.map((t, index) => {
                 if (this.isEditMode) {
-                    btn.innerText = '✓ Выйти из настройки';
-                    btn.classList.add('active');
-                    form.style.display = 'block';
+                    return `
+                        <div class="task-card" style="border-color: #444;">
+                            <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
+                            <button class="delete-btn" onclick="app.deleteInlineTask('${t.id}')">🗑️</button>
+                        </div>
+                    `;
                 } else {
-                    btn.innerText = '⚙️ Настройка задач';
-                    btn.classList.remove('active');
-                    form.style.display = 'none';
+                    return `
+                        <div class="task-card">
+                            <div><b>${t.n}</b><br><span class="gold-num" style="font-size:1rem;">+${t.x}</span></div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-action minus" id="btn-minus-${index}">−</button>
+                                <button class="btn-action plus" id="btn-plus-${index}">+</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join(''); 
+
+            if (!this.isEditMode) {
+                this.tasks.forEach((t, index) => {
+                    const btnMinus = document.getElementById(`btn-minus-${index}`);
+                    const btnPlus = document.getElementById(`btn-plus-${index}`);
+                    if (!btnMinus || !btnPlus) return;
+
+                    const handleTouch = (val, e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        app.doTask(val);
+                    };
+
+                    btnMinus.addEventListener('touchstart', (e) => handleTouch(t.x * -1, e), { passive: false });
+                    btnPlus.addEventListener('touchstart', (e) => handleTouch(t.x, e), { passive: false });
                     
-                    // КРИТИЧЕСКИЙ СИГНАЛ: Отправляем широковещательный импульс второму партнеру об обновлении
-                    await sb.channel('pair_tasks_sync').send({
-                        type: 'broadcast',
-                        event: 'tasks-updated',
-                        payload: {}
-                    });
-                }
+                    btnMinus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x * -1); });
+                    btnPlus.addEventListener('click', (e) => { e.preventDefault(); app.doTask(t.x); });
+                });
+            }
+        },
+
+        async doTask(val) {
+            const myXpEl = document.getElementById('v-my');
+            const card = document.getElementById('main-card');
+            
+            myXpEl.classList.remove('bump'); card.classList.remove('update-flash');
+            void myXpEl.offsetWidth; 
+            myXpEl.classList.add('bump'); card.classList.add('update-flash');
+            
+            setTimeout(() => { myXpEl.classList.remove('bump'); card.classList.remove('update-flash'); }, 300);
+
+            const { data: cur } = await sb.from('profiles').select('xp').eq('id', this.user_id).single();
+            const newXp = Math.max(0, (cur.xp || 0) + val);
+            await sb.from('profiles').update({ xp: newXp }).eq('id', this.user_id);
+            this.profile.xp = newXp; 
+            this.refresh();
+        },
+
+        async refresh() {
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            if (!team) return;
+            
+            // Загружаем актуальные задачи из базы при любом обновлении союза
+            await this.loadTasksFromDB();
+            
+            if (this.profile.setup_done === false) {
+                this.renderWizardTasks();
+            } else {
                 this.renderTasks();
             }
 
-            async addInlineTask() {
-                const textInput = document.getElementById('inline-task-text');
-                const diffInput = document.getElementById('inline-task-difficulty');
-                const text = textInput.value.trim();
-                const diff = parseInt(diffInput.value);
+            const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
+            if (me) this.updateUI(me, p);
+        },
 
-                if (!text || isNaN(diff)) return alert('Заполните поля задачи');
+        updateUI(me, p) {
+            document.getElementById('v-my').innerHTML = `${me.xp} <div class="coin-icon"></div>`;
+            document.getElementById('f-my').style.width = Math.min((me.xp/2000)*100, 100) + '%';
+            
+            let totalPairXp = me.xp;
 
-                await sb.from('tasks').insert([{
-                    pair_code: this.profile.pair_code,
-                    text: text,
-                    difficulty: diff
-                }]);
+            if(p) {
+                document.getElementById('label-p').innerText = p.nickname.toUpperCase();
+                document.getElementById('v-p').innerHTML = `${p.xp} <div class="coin-icon"></div>`;
+                document.getElementById('f-p').style.width = Math.min((p.xp/2000)*100, 100) + '%';
+                totalPairXp += p.xp;
+            } else {
+                document.getElementById('label-p').innerText = 'ОЖИДАНИЕ ПАРТНЕРА...';
+                document.getElementById('v-p').innerHTML = `0 <div class="coin-icon"></div>`;
+                document.getElementById('f-p').style.width = '0%';
+            }
+            
+            document.getElementById('week-tag').innerText = `НЕДЕЛЯ ${me.current_week || 1} / 4`;
+            const history = me.used_dates || "";
+            document.getElementById('date-status').innerText = history.includes("|") ? `Свидание недели: ${history.split("|").pop().trim()}` : "";
 
-                textInput.value = '';
-                diffInput.value = '';
-                await this.loadTasksFromDB();
-                this.renderTasks();
+            const now = new Date();
+            const isFridayEvening = (now.getDay() === 5 && now.getHours() >= 18);
+            const isLeader = p ? (me.xp > p.xp) : (me.xp > 0);
+            const shopBtn = document.getElementById('shop-trigger-btn');
+            
+            if ((isFridayEvening || this.isDebugShopOpen) && isLeader && totalPairXp > 0) {
+                shopBtn.disabled = false; shopBtn.classList.add('active');
+            } else {
+                shopBtn.disabled = true; shopBtn.classList.remove('active');
+            }
+        },
+
+        copyPairCode() {
+            const codeText = this.profile.pair_code;
+            navigator.clipboard.writeText(codeText).then(() => { alert('Код союза скопирован!'); }).catch(err => { alert('Ваш код: ' + codeText); });
+        },
+
+        async openDateSelection() {
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
+            const totalPairXp = me.xp + (p ? p.xp : 0);
+
+            const history = this.profile.used_dates || "";
+            const shuffled = this.allDates.filter(d => !history.includes(d.n)).sort(() => 0.5 - Math.random()).slice(0, 3);
+            document.getElementById('date-modal').style.display = 'block';
+            document.getElementById('date-list').innerHTML = shuffled.map(d => {
+                const canAfford = totalPairXp >= d.p;
+                return `
+                    <div class="date-option" style="${canAfford ? '' : 'opacity: 0.4; pointer-events: none;'}" onclick="app.selectDate('${d.n}', ${d.p})">
+                        <span>${d.n} ${canAfford ? '' : '🔒 (Мало монет)'}</span>
+                        <span class="gold-num" style="font-size:1rem;">${d.p} <div class="coin-icon"></div></span>
+                    </div>
+                `;
+            }).join('');
+        },
+
+        async selectDate(name, price) {
+            const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
+            const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
+            const totalPairXp = me.xp + (p ? p.xp : 0);
+
+            if (totalPairXp < price) { alert(`Недостаточно общих баллов пары!`); return; }
+            if(!confirm(`Выбираем свидание "${name}" за ${price} 🪙?`)) return;
+
+            let myNewXp = me.xp;
+            let partnerNewXp = p ? p.xp : 0;
+
+            if (myNewXp >= price) {
+                myNewXp -= price;
+            } else {
+                const remainder = price - myNewXp;
+                myNewXp = 0;
+                partnerNewXp = Math.max(0, partnerNewXp - remainder);
             }
 
-            async deleteTask(id) {
-                await sb.from('tasks').delete().eq('id', id);
-                await this.loadTasksFromDB();
-                if (this.profile.setup_done === false) {
-                    this.renderWizardTasks();
-                } else {
-                    this.renderTasks();
-                }
+            const nextWeek = (this.profile.current_week || 1) + 1;
+            const newHistory = (this.profile.used_dates || "") + " | " + name;
+            
+            await sb.from('profiles').update({ xp: myNewXp, current_week: nextWeek, used_dates: newHistory }).eq('id', me.id);
+            if (p) {
+                await sb.from('profiles').update({ xp: partnerNewXp, current_week: nextWeek, used_dates: newHistory }).eq('id', p.id);
             }
 
-            async completeTask(id, difficulty) {
-                const newCoins = (this.profile.coins || 0) + difficulty;
-                
-                const { error: pErr } = await sb.from('profiles').update({ coins: newCoins }).eq('id', this.user_id);
-                if (pErr) return alert('Ошибка начисления монет');
-
-                await sb.from('tasks').delete().eq('id', id);
-                
-                this.profile.coins = newCoins;
-                await this.loadTasksFromDB();
-                this.renderTasks();
-            }
-
-            updateUI(me, partner) {
-                document.getElementById('user-name-display').innerText = me.nickname;
-                document.getElementById('user-avatar').innerText = me.nickname.substring(0, 2).toUpperCase();
-                
-                document.getElementById('my-name').innerText = me.nickname;
-                document.getElementById('my-coins').innerText = me.coins || 0;
-
-                const pCardName = document.getElementById('partner-name');
-                const pCardCoins = document.getElementById('partner-coins');
-
-                if (partner) {
-                    pCardName.innerText = partner.nickname;
-                    pCardCoins.innerText = partner.coins || 0;
-                } else {
-                    pCardName.innerText = 'Ожидание...';
-                    pCardCoins.innerText = '0';
-                }
-            }
-
-            async refresh() {
-                const { data: team } = await sb.from('profiles').select('*').eq('pair_code', this.profile.pair_code);
-                if (!team) return;
-                
-                // Перезапрашиваем задачи из базы данных при любом обновлении союза
-                await this.loadTasksFromDB();
-                
-                // Перерисовываем актуальные списки на экранах
-                if (this.profile.setup_done === false) {
-                    this.renderWizardTasks();
-                } else {
-                    this.renderTasks();
-                }
-
-                const me = team.find(x => x.id === this.user_id), p = team.find(x => x.id !== this.user_id);
-                if (me) this.updateUI(me, p);
-            }
-
-            start() {
-                // Слушаем изменения баланса монет и статусов в таблице profiles
-                sb.channel('pair_channel')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `pair_code=eq.${this.profile.pair_code}` }, () => {
-                        this.refresh();
-                    })
-                    .subscribe();
-
-                // Слушаем специальное событие принудительного обновления задач при закрытии редактора
-                sb.channel('pair_tasks_sync')
-                    .on('broadcast', { event: 'tasks-updated' }, async () => {
-                        await this.loadTasksFromDB();
-                        this.renderTasks();
-                    })
-                    .subscribe();
-            }
-
-            logout() {
-                localStorage.removeItem('bg_user_id');
-                this.user_id = null;
-                this.profile = null;
-                this.tasks = [];
-                this.isEditMode = false;
-                this.showScreen('auth-screen');
-            }
-        }
-
-        const app = new BriffGame();
-        window.onload = () => app.init();
-    </script>
+            location.reload();
+        },
+        logout() { localStorage.clear(); location.reload(); }
+    };
+    app.init();
+</script>
 </body>
 </html>
